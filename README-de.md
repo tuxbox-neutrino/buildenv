@@ -31,13 +31,13 @@ git config --global user.email "you@example.com"
 git config --global user.user "Dein Name"
 ```
 
-## Image bauen:
+## Image bauen
 
 > :memo: **Hinweis:** Einige Pfade basieren auf Vorgaben, die vom Init-Script erzeugt werden. Einige Einträge werden als ```<Platzhalter>``` dargestellt, die entsprechend angepasst werden müssen.
 
 > ### 1. Init-Skript klonen.
 ```bash
-git clone https://github.com/dbt1/buildenv.git
+git clone https://github.com/tuxbox-neutrino/buildenv.git
 cd buildenv
 ```
 
