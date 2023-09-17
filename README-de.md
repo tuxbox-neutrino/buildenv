@@ -44,7 +44,7 @@ cd buildenv
 
 > ### 2. Init-Skript ausführen
 ```bash
-./init.sh
+./init
 cd poky-3.2.4
 ```
 
