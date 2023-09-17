@@ -13,7 +13,7 @@ This is an automatically translated file. Original content in [German](https://g
 ### Install required host packages (Debian 11)
 For use with other distributions see: [Yocto Project Quick Build](https://docs.yoctoproject.org/3.2.4/ref-manual/ref-system-requirements.html#supported-linux-distributions)
 
-> :memo: **NOTE:** If using the Tuxbox Builder VM (which is not mandatory), please skip to [Step 1](Clone #1-Init-Script). The Tuxbox Builder VM already contains required packages. Details and download of Tuxbox-Builder VM see: [Tuxbox-Builder](https://sourceforge.net/projects/n4k/files/Tuxbox-Builder)
+> :memo: **NOTE:** If using the Tuxbox Builder VM (which is not mandatory), please skip to [Step 1](#1-Init-Script-Clone). The Tuxbox Builder VM already contains required packages. Details and download of Tuxbox-Builder VM see: [Tuxbox-Builder](https://sourceforge.net/projects/n4k/files/Tuxbox-Builder)
 
 ```bash
 apt-get install -y gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential \
@@ -21,6 +21,7 @@ chrpath socat cpio python python3 python3-pip python3-pexpect xz-utils debianuti
 iputils-ping python3-git python3-jinja2 libegl1-mesa pylint3 xterm subversion locales-all \
 libxml2-utils ninja-build default-jre clisp libcapstone4 libsdl2-dev doxygen
 ```
+> :memo: **NOTE:** On Debian 10 (buster) use libcapstone3.
 
 #### Recommended additional packages for graphical support and analysis (e.g. with Kdevelop, Meld):
 ```bash
