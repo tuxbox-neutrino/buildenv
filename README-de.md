@@ -101,7 +101,7 @@ bitbake <target>
 Die erneute Ausführung des Init-Skripts aktualisiert die enthaltenen Meta-Layer auf den Stand der Remote-Repositories. 
 ```bash
 cd $HOME/build
-./init.sh
+./init
 ```	
 Die angestoßenen Update-Routinen des Init-scripts sollten nicht festgeschriebene Änderungen vorübergehend stashen bzw. rebasen lokale Commits auf die Remote-Änderungen. Konflikte muss man jedoch manuell auflösen. Natürlich kann man seine lokalen Meta-Layer für Meta-Neutrino- und Maschinen-Layer-Repositories manuell aktualisieren und modifizieren. 
 
@@ -116,7 +116,7 @@ Wenn Du deine Maschinen-Konfigurationen zurücksetzen möchtest, benenne bitte d
 ```bash
 mv $HOME/build/poky-3.2.4/build/<machine>/conf $HOME/build/poky-3.2.4/build/<machine>/conf.01
 cd $HOME/build
-./init.sh
+./init
 ```
 	
 ## Neubau eines einzelnen Ziels erzwingen
