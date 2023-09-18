@@ -1,4 +1,4 @@
-This is an automatically translated file. Original content in [German](https://github.com/tuxbox-neutrino/buildenv/blob/3.2.4/README-de.md):
+Note: This is an automatically translated file. Original content from [here](https://github.com/tuxbox-neutrino/buildenv/blob/3.2.4/README-de.md):
 
 # Quick start image creation #
 
@@ -13,7 +13,7 @@ This is an automatically translated file. Original content in [German](https://g
 ### Install required host packages (Debian 11)
 For use with other distributions see: [Yocto Project Quick Build](https://docs.yoctoproject.org/3.2.4/ref-manual/ref-system-requirements.html#supported-linux-distributions)
 
-> :memo: **NOTE:** If using the Tuxbox Builder VM (which is not mandatory), please skip to [Step 1](#1-Init-Script-Clone). The Tuxbox Builder VM already contains required packages. Details and download of Tuxbox-Builder VM see: [Tuxbox-Builder](https://sourceforge.net/projects/n4k/files/Tuxbox-Builder)
+> :memo: **NOTE:** If using the Tuxbox Builder VM (which is not mandatory), please skip to [Step 1](#1-clone-init-script). The Tuxbox Builder VM already contains required packages. Details and download of Tuxbox-Builder VM see: [Tuxbox-Builder](https://sourceforge.net/projects/n4k/files/Tuxbox-Builder)
 
 ```bash
 apt-get install -y gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential \
@@ -46,7 +46,7 @@ cd buildenv
 
 > ### 2. Run init script
 ```bash
-./init.sh
+./init
 cd poky-3.2.4
 ```
 
@@ -103,7 +103,7 @@ bitbake <target>
 Re-executing the init script updates the included meta layers to the status of the remote repositories.
 ```bash
 cd $HOME/build
-./init.sh
+./init
 ```
 The triggered update routines of the init script should temporarily stash uncommitted changes or rebase local commits to the remote changes. However, conflicts must be resolved manually. Of course, you can manually update and modify your local meta layers for meta neutrino and machine layer repositories.
 
@@ -118,7 +118,7 @@ If you want to reset your machine configurations, please rename the conf directo
 ```bash
 mv $HOME/build/poky-3.2.4/build/<machine>/conf $HOME/build/poky-3.2.4/build/<machine>/conf.01
 cd $HOME/build
-./init.sh
+./init
 ```
 
 ## Force rebuild of a single target
