@@ -14,9 +14,13 @@ FILES_DIR="$BASEPATH/files"
 # identical listings
 MACHINES_IDENTICAL_HD51="hd51 ax51 mutant51"
 MACHINES_IDENTICAL_H7="h7 zgemmah7"
+MACHINES_IDENTICAL_HD60="hd60 ax60" #TODO: move into gfutures
+MACHINES_IDENTICAL_HD61="hd61 ax61" #TODO: move into gfutures
 
 # gfutures listing
 MACHINES_GFUTURES="$MACHINES_IDENTICAL_HD51 bre2ze4k"
+# hisilcon listing  #TODO: move into gfutures
+MACHINES_HISI="$MACHINES_IDENTICAL_HD60 $MACHINES_IDENTICAL_HD61"
 # airdigital listing
 MACHINES_AIRDIGITAL="$MACHINES_IDENTICAL_H7"
 # edision listing
@@ -25,7 +29,7 @@ MACHINES_EDISION="osmio4k osmio4kplus"
 MACHINES_CERYON="e4hdultra"
 
 # valid machine list
-MACHINES="$MACHINES_GFUTURES $MACHINES_AIRDIGITAL hd60 hd61 $MACHINES_EDISION $MACHINES_CERYON"
+MACHINES="$MACHINES_GFUTURES $MACHINES_HISI $MACHINES_AIRDIGITAL $MACHINES_EDISION $MACHINES_CERYON"
 
 HINT_SYNTAX='\033[37;1mUsage '$0' <machine>\033[0m'
 HINT_MACHINES="<$MACHINES>, <all> or keep empty < >"
@@ -98,7 +102,7 @@ GFUTURES_LAYER_GIT_URL=$TUXBOX_BSP_LAYER_GIT_URL/$GFUTURES_LAYER_NAME
 EDISION_LAYER_NAME=meta-edision
 EDISION_LAYER_GIT_URL=$TUXBOX_LAYER_GIT_URL/$EDISION_LAYER_NAME
 
-HISI_LAYER_NAME=meta-hisilicon
+HISI_LAYER_NAME=meta-hisilicon  #TODO: move into gfutures
 HISI_LAYER_GIT_URL=$TUXBOX_LAYER_GIT_URL/$HISI_LAYER_NAME
 
 CERYON_LAYER_NAME=meta-ceryon
@@ -160,9 +164,8 @@ if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_EDISION
 	clone_meta '' $COMPATIBLE_BRANCH $EDISION_LAYER_GIT_URL '' $BUILD_ROOT_DIR/$EDISION_LAYER_NAME
 	echo -e "\033[32;1mOK ...\033[0m\n"
 fi
-#TODO: move into gfutures
-# hisilicon
-	if [ "$MACHINE" == "all" ] || [ "$MACHINE" == "hd60" ] || [ "$MACHINE" == "hd61" ]; then
+# hisilicon #TODO: move into gfutures
+	if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_HISI '") == true; then
 	clone_meta '' $COMPATIBLE_BRANCH $HISI_LAYER_GIT_URL '' $BUILD_ROOT_DIR/$HISI_LAYER_NAME
 	echo -e "\033[32;1mOK ...\033[0m\n"
 fi

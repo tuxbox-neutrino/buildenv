@@ -53,7 +53,7 @@ function get_metaname () {
 		META_NAME="gfutures"
 	elif [ "$TMP_NAME" == "h7" ] || [ "$TMP_NAME" == "zgemmah7" ]; then
 		META_NAME="airdigital"
-	elif [ "$TMP_NAME" == "hd60" ] || [ "$TMP_NAME" == "hd61" ]; then
+	elif [ "$TMP_NAME" == "hd60" ] || [ "$TMP_NAME" == "hd61" ] || [ "$TMP_NAME" == "ax60" ] || [ "$TMP_NAME" == "ax61" ]; then
 		META_NAME="hisilicon"
 	elif [ "$TMP_NAME" == "osmio4k" ] || [ "$TMP_NAME" == "osmio4kplus" ]; then
 		META_NAME="edision"
@@ -135,6 +135,10 @@ function get_real_machine_type() {
 	MACHINE_TYPE=$1
 	if  [ "$MACHINE_TYPE" == "mutant51" ] || [ "$MACHINE_TYPE" == "ax51" ] || [ "$MACHINE_TYPE" == "hd51" ]; then
 		RMT_RES="hd51"
+	elif  [ "$MACHINE_TYPE" == "hd60" ] || [ "$MACHINE_TYPE" == "ax60" ]; then
+		RMT_RES="hd60"
+	elif  [ "$MACHINE_TYPE" == "hd61" ] || [ "$MACHINE_TYPE" == "ax61" ]; then
+		RMT_RES="hd61"
 	elif  [ "$MACHINE_TYPE" == "zgemmah7" ] || [ "$MACHINE_TYPE" == "h7" ]; then
 		RMT_RES="h7"
 	else
@@ -148,6 +152,10 @@ function get_real_machine_id() {
 	MACHINEBUILD=$1
 	if  [ "$MACHINEBUILD" == "hd51" ]; then
 		RMI_RES="ax51"
+	elif  [ "$MACHINEBUILD" == "hd60" ]; then
+		RMI_RES="ax60"
+	elif  [ "$MACHINEBUILD" == "hd61" ]; then
+		RMI_RES="ax61"
 	elif  [ "$MACHINEBUILD" == "h7" ]; then
 		RMI_RES="zgemmah7"
 	else
