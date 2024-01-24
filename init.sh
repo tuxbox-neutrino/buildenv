@@ -24,7 +24,7 @@ MACHINES_HISI="$MACHINES_IDENTICAL_HD60 $MACHINES_IDENTICAL_HD61"
 # airdigital listing
 MACHINES_AIRDIGITAL="$MACHINES_IDENTICAL_H7"
 # edision listing
-MACHINES_EDISION="osmio4k osmio4kplus"
+#MACHINES_EDISION="osmio4k osmio4kplus"
 # ceryon listing
 MACHINES_CERYON="e4hdultra"
 
