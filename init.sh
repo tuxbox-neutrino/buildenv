@@ -2,16 +2,55 @@
 source init.functions.sh
 #set -x
 
-BASEPATH=$(pwd)
-TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
-
-# only current version
-# IMAGE_VERSION=$(git -C $BASEPATH rev-parse --abbrev-ref HEAD)
+## Comatible image version
 IMAGE_VERSION="3.2.4"
 
+## global vars
+BASEPATH=$(pwd)
+SSH=$(which ssh)
+GIT_SSH_KEYFILE=""
+true="1"
+false="0"
+DO_UPDATE=$false
 FILES_DIR="$BASEPATH/files"
+HTTPD_DIST_HOSTNAME="localhost"
+HTTPD_DIST_DIR="/var/www/html/dist"
+USER_CALL="$0 $@"
 
-# identical listings
+## Basename of this script
+NAME=$(basename $0)
+
+## Timestamp for logging
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+## Logfile
+LOG_PATH=$BASEPATH/log
+mkdir -p $LOG_PATH
+TMP_LOGFILE="$LOG_PATH/.$0-tmp.log"
+rm -f $TMP_LOGFILE
+LOGFILE_NAME="$NAME"_"$TIMESTAMP.log"
+LOGFILE=$LOG_PATH/$LOGFILE_NAME
+LOGFILE_LINK=$LOG_PATH/$NAME.log
+echo "" >  $LOGFILE
+ln -sf $LOGFILE $LOGFILE_LINK
+my_echo "true" "$USER_CALL"
+
+## Current build env script version
+VERSION=$(git -C $BASEPATH describe --tags 2>/dev/null)
+if [ -z "$VERSION" ]; then
+	VERSION="$IMAGE_VERSION"
+fi
+INIT_VERSION="$NAME $VERSION"
+
+## Preset required branches and revs
+COMPATIBLE_BRANCH="gatesgarth"
+COMPATIBLE_TAG="$IMAGE_VERSION"
+YOCTO_SRCREV="bc71ec0"
+PYTHON2_SRCREV="27d2aeb"
+OE_SRCREV="f3f7a5f"
+
+
+## Machines
+# Identical listings
 MACHINES_IDENTICAL_HD51="hd51 ax51 mutant51"
 MACHINES_IDENTICAL_H7="h7 zgemmah7"
 MACHINES_IDENTICAL_HD60="hd60 ax60" #TODO: move into gfutures
@@ -24,62 +63,27 @@ MACHINES_HISI="$MACHINES_IDENTICAL_HD60 $MACHINES_IDENTICAL_HD61"
 # airdigital listing
 MACHINES_AIRDIGITAL="$MACHINES_IDENTICAL_H7"
 # edision listing
-#MACHINES_EDISION="osmio4k osmio4kplus"
+MACHINES_EDISION="osmio4k osmio4kplus"
 # ceryon listing
 MACHINES_CERYON="e4hdultra"
 
 # valid machine list
 MACHINES="$MACHINES_GFUTURES $MACHINES_HISI $MACHINES_AIRDIGITAL $MACHINES_EDISION $MACHINES_CERYON"
 
-HINT_SYNTAX='\033[37;1mUsage '$0' <machine>\033[0m'
-HINT_MACHINES="<$MACHINES>, <all> or keep empty < >"
-HINT_IMAGE_VERSIONS="$IMAGE_VERSION"
+MACHINE="all" # default for MACHINE, if not set
+HINT_MACHINES="Select a valid machine type (empty means <all> as default) <$MACHINES>"
  
-LOG_PATH=$BASEPATH/log
-mkdir -p $LOG_PATH
-
+## Backups
 BACKUP_PATH=$BASEPATH/backups
 mkdir -p $BACKUP_PATH
-
-LOGFILE_NAME="$0_$TIMESTAMP.log"
-LOGFILE=$LOG_PATH/$LOGFILE_NAME
-TMP_LOGFILE=$LOG_PATH/.tmp.log
-touch $LOGFILE
-
-LOGFILE_LINK=$BASEPATH/$0.log
-
-rm -f $TMP_LOGFILE
-rm -f $LOGFILE_LINK
-ln -sf $LOGFILE $LOGFILE_LINK
-
-
-# set passed parameters
-if [ "$1" == "" ]; then
-	MACHINE="all"
-else
-	MACHINE=$1
-fi
-
-if [ $(is_valid_machine "$MACHINE") == false ]; then
-    echo -e "\033[31;1mERROR:\tNo valid machine defined.\033[0m\n\t$HINT_SYNTAX.
-    \tKeep parameter <machine> empty to initialize all possible machine types or set your favorite machine.
-    \tPossible types are:
-    \t\033[37;1m$HINT_MACHINES\033[0m\n"
-    exit 1
-fi
-
-echo -e "##########################################################################################"
-echo -e "\033[37;1mInitialze build environment:\nversion: $IMAGE_VERSION\nmachine: $MACHINE\033[0m"
-echo -e "##########################################################################################\n"
-
-
 BACKUP_SUFFIX=bak
 
-YOCTO_GIT_URL=https://git.yoctoproject.org/git/poky
-POKY=poky
-POKY_NAME=$IMAGE_VERSION
-BUILD_ROOT_DIR=$BASEPATH/$POKY-$IMAGE_VERSION
-BUILD_ROOT=$BUILD_ROOT_DIR/build
+## Layer sources
+YOCTO_GIT_URL="https://git.yoctoproject.org/git/poky"
+POKY="poky"
+POKY_NAME="$IMAGE_VERSION"
+BUILD_ROOT_DIR="$BASEPATH/$POKY-$IMAGE_VERSION"
+BUILD_ROOT="$BUILD_ROOT_DIR/build"
 
 OE_LAYER_NAME=meta-openembedded
 OE_LAYER_GIT_URL=https://git.openembedded.org/meta-openembedded
@@ -88,162 +92,244 @@ OE_LAYER_PATCH_LIST="0001-openembedded-disable-meta-python.patch 0002-openembedd
 OE_CORE_LAYER_NAME=openembedded-core
 OE_CORE_LAYER_GIT_URL=https://github.com/openembedded/openembedded-core.git
 
-TUXBOX_LAYER_NAME=meta-neutrino
-TUXBOX_LAYER_GIT_URL=https://github.com/Tuxbox-Project
+# meta-neutrino project URL:
+PROJECT_URL="https://github.com/tuxbox-neutrino"
 
-TUXBOX_BSP_LAYER_GIT_URL=$TUXBOX_LAYER_GIT_URL
+## Help
+show_help() {
+	if [[ $LANG == de_* ]]; then
+        echo "Dieses Skript initialisiert und aktualisiert die Entwicklungsumgebung für den Bau von Images und Paketen für verschiedene Maschinenkonfigurationen."
+        echo "Es klont und aktualisiert Meta-Layer aus vorgegebenen Repositories, bereitet die Build-Umgebung vor und unterstützt die Konfiguration für spezifische Maschinentypen."
+	else
+        echo "This script initializes and updates the development environment for building images and packages for various machine configurations."
+        echo "It clones and updates meta-layers from specified repositories, prepares the build environment, and supports configuration for specific machine types."
+	fi
+	echo ""
+    echo "Usage: $0 [OPTIONS]..."
+    echo ""
+    echo "Options:"
+    echo "  -m, --machine             $HINT_MACHINES"
+    echo "      --httpd-dist-hostname IP or hostname (optional with portname) to define the update server address for local.conf.common.inc, default: $HTTPD_DIST_HOSTNAME"
+    echo "      --httpd-dist-dir      Directory where the local httpd server find the deployed images and packages, default: $HTTPD_DIST_DIR"
+    echo "  -p, --project-url         Project-URL where to find project meta layers,"
+    echo "                            e.g. for read and write access: git@github.com:tuxbox-neutrino, default = $PROJECT_URL"
+    echo "  -u, --update              Update your project meta layers"
+    echo "  -i, --id-rsa-file         Path to your preferred id rsa file, default: users id rsa file, e.g. $HOME/.ssh/id_rsa"
+    echo ""
+    echo "  -h, --help                Show this help"
+    echo "  --version                 Show version information"
+}
 
-AIRDIGITAL_LAYER_NAME=meta-airdigital
-AIRDIGITAL_LAYER_GIT_URL=$TUXBOX_BSP_LAYER_GIT_URL/$AIRDIGITAL_LAYER_NAME
+## Processing command line arguments
+TEMP=$(getopt -o up:m:i:h --long httpd-dist-hostname:,httpd-dist-dir:,update,project-url:,machine:,id-rsa-file,help,version -n 'init' -- "$@")
+if [ $? != 0 ] ; then
+	my_echo "Error while process arguments" >&2
+	show_help
+	exit 1
+fi
 
-GFUTURES_LAYER_NAME=meta-gfutures
-GFUTURES_LAYER_GIT_URL=$TUXBOX_BSP_LAYER_GIT_URL/$GFUTURES_LAYER_NAME
+# Note the quotes around `$TEMP`: they are essential!
+eval set -- "$TEMP"
 
-EDISION_LAYER_NAME=meta-edision
-EDISION_LAYER_GIT_URL=$TUXBOX_LAYER_GIT_URL/$EDISION_LAYER_NAME
+# Extract arguments.
+while true ; do
+    case "$1" in
+        -p|--project-url)
+            PROJECT_URL="$2"; shift 2 ;;
+        -m|--machine)
+            MACHINE="$2"; shift 2 ;;
+		-i|--id-rsa-file)
+            GIT_SSH_KEYFILE="$2"; shift 2 ;;
+		   --httpd-dist-hostname)
+            HTTPD_DIST_HOSTNAME="$2"; shift 2 ;;
+		   --httpd-dist-dir)
+            HTTPD_DIST_DIR="$2"; shift 2 ;;
+		-u|--update)
+			DO_UPDATE="$true"; shift ;;
+        -h|--help)
+            show_help
+            exit 0 ;;
+		  --version)
+		    echo "$INIT_VERSION"
+		    exit 0 ;;
+        --) shift ; break ;;
+        *) echo "Internal Error!" ; exit 1 ;;
+    esac
+done
 
-HISI_LAYER_NAME=meta-hisilicon  #TODO: move into gfutures
-HISI_LAYER_GIT_URL=$TUXBOX_LAYER_GIT_URL/$HISI_LAYER_NAME
+# Check machine type
+if [ $(is_valid_machine "$MACHINE") == false ]; then
+    my_echo "\033[31;1mNo valid machine defined.\033[0m"
+    my_echo "$HINT_MACHINES"
+    exit 1
+fi
 
-CERYON_LAYER_NAME=meta-ceryon
-CERYON_LAYER_GIT_URL=$TUXBOX_BSP_LAYER_GIT_URL/$CERYON_LAYER_NAME
+my_echo "------------------------------------------------------------------------------------------"
+my_echo "Buildenv Version:          \033[37;1m$INIT_VERSION\033[0m "
+my_echo "Image Version:             \033[37;1m$IMAGE_VERSION\033[0m "
+my_echo "Compatible OE-branch:      \033[37;1m$COMPATIBLE_BRANCH\033[0m "
+my_echo "httpd Dist hostname:       \033[37;1m$HTTPD_DIST_HOSTNAME\033[0m "
+my_echo "httpd Dist directory:      \033[37;1m$HTTPD_DIST_DIR\033[0m "
+my_echo "Machine:                   \033[37;1m$MACHINE\033[0m "
+my_echo "Project Repository URL:    \033[37;1m$PROJECT_URL\033[0m "
+my_echo "SRCREV Yocto:              \033[37;1m$YOCTO_SRCREV\033[0m "
+my_echo "SRCREV OE:                 \033[37;1m$OE_SRCREV\033[0m "
+my_echo "SRCREV Python2:            \033[37;1m$PYTHON2_SRCREV\033[0m "
+my_echo "------------------------------------------------------------------------------------------"
 
+## Fetch meta sources
+# fetch required branch from yocto
+fetch_meta "" $COMPATIBLE_BRANCH $YOCTO_GIT_URL $YOCTO_SRCREV $BUILD_ROOT_DIR
+
+# fetch required branch from openembedded
+fetch_meta "" $COMPATIBLE_BRANCH $OE_LAYER_GIT_URL $OE_SRCREV $BUILD_ROOT_DIR/$OE_LAYER_NAME "$OE_LAYER_PATCH_LIST"
+
+# fetch required branch of oe-core from openembedded
+fetch_meta "" master $OE_CORE_LAYER_GIT_URL "" $BUILD_ROOT_DIR/$OE_CORE_LAYER_NAME
+
+# fetch required branch for meta-python2
 PYTHON2_LAYER_NAME=meta-python2
 PYTHON2_LAYER_GIT_URL=https://git.openembedded.org/$PYTHON2_LAYER_NAME
 PYTHON2_PATCH_LIST="0001-local_conf_outcomment_line_15.patch"
+fetch_meta "" $COMPATIBLE_BRANCH $PYTHON2_LAYER_GIT_URL $PYTHON2_SRCREV $BUILD_ROOT_DIR/$PYTHON2_LAYER_NAME "$PYTHON2_PATCH_LIST"
 
+# fetch required branch for meta-qt5
 QT5_LAYER_NAME=meta-qt5
 QT5_LAYER_GIT_URL=https://github.com/meta-qt5/$QT5_LAYER_NAME
+fetch_meta "" $COMPATIBLE_BRANCH $QT5_LAYER_GIT_URL "" $BUILD_ROOT_DIR/$QT5_LAYER_NAME
 
+# fetch required branch from meta-neutrino
+TUXBOX_LAYER_NAME="meta-neutrino"
+TUXBOX_LAYER_BRANCH="master"
+TUXBOX_LAYER_SRCREV="ffc1b65ec3cfd2c6bbd339d3ce201d6b39abd527"
+TUXBOX_LAYER_GIT_URL="${PROJECT_URL}/$TUXBOX_LAYER_NAME.git"
+fetch_meta "" $TUXBOX_LAYER_BRANCH $TUXBOX_LAYER_GIT_URL "$TUXBOX_LAYER_SRCREV" $BUILD_ROOT_DIR/$TUXBOX_LAYER_NAME
+safe_dir="$BUILD_ROOT_DIR/$TUXBOX_LAYER_NAME"
+if ! git config --global --get safe.directory | grep -qxF "$safe_dir"; then
+	do_exec "git config --global --add safe.directory \"$safe_dir\""
+fi
 
-# set required branches
-COMPATIBLE_BRANCH=gatesgarth
-YOCTO_BRANCH_HASH=bc71ec0
-PYTHON2_BRANCH_HASH=27d2aeb
-OE_BRANCH_HASH=f3f7a5f
+# fetch required branch from meta-airdigital
+AIRDIGITAL_LAYER_NAME="meta-airdigital"
+AIRDIGITAL_LAYER_BRANCH="master"
+AIRDIGITAL_LAYER_SRCREV="ac8f769e35f839bbcf9c38d2b2b98513be907ac1"
+AIRDIGITAL_LAYER_GIT_URL="$PROJECT_URL/$AIRDIGITAL_LAYER_NAME.git"
+if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_AIRDIGITAL '") == true ]; then
+	fetch_meta "" $AIRDIGITAL_LAYER_BRANCH $AIRDIGITAL_LAYER_GIT_URL "$AIRDIGITAL_LAYER_SRCREV" $BUILD_ROOT_DIR/$AIRDIGITAL_LAYER_NAME
+fi
 
-
-# clone/update required branch from yocto
-clone_meta '' $COMPATIBLE_BRANCH $YOCTO_GIT_URL $YOCTO_BRANCH_HASH $BUILD_ROOT_DIR
-# for compatibility with old path structure
-# ln -sf $BUILD_ROOT_DIR $BASEPATH/$POKY-$IMAGE_VERSION
-echo -e "\033[32;1mOK ...\033[0m\n"
-
-# clone required branch from openembedded
-clone_meta '' $COMPATIBLE_BRANCH $OE_LAYER_GIT_URL $OE_BRANCH_HASH $BUILD_ROOT_DIR/$OE_LAYER_NAME "$OE_LAYER_PATCH_LIST"
-echo -e "\033[32;1mOK ...\033[0m\n"
-clone_meta '' master $OE_CORE_LAYER_GIT_URL '' $BUILD_ROOT_DIR/$OE_CORE_LAYER_NAME
-echo -e "\033[32;1mOK ...\033[0m\n"
-
-# clone required branch for meta-python2
-clone_meta '' $COMPATIBLE_BRANCH $PYTHON2_LAYER_GIT_URL $PYTHON2_BRANCH_HASH $BUILD_ROOT_DIR/$PYTHON2_LAYER_NAME "$PYTHON2_PATCH_LIST"
-echo -e "\033[32;1mOK ...\033[0m\n"
-
-# clone required branch for meta-qt5
-clone_meta '' $COMPATIBLE_BRANCH $QT5_LAYER_GIT_URL '' $BUILD_ROOT_DIR/$QT5_LAYER_NAME
-echo -e "\033[32;1mOK ...\033[0m\n"
-
-# clone/update required branch from meta-neutrino
-clone_meta '' $COMPATIBLE_BRANCH $TUXBOX_LAYER_GIT_URL/$TUXBOX_LAYER_NAME '' $BUILD_ROOT_DIR/$TUXBOX_LAYER_NAME
-echo -e "\033[32;1mOK ...\033[0m\n"
-
-
-# gfutures
+# fetch required branch from meta-gfutures
+GFUTURES_LAYER_NAME=meta-gfutures
+GFUTURES_LAYER_BRANCH="master"
+GFUTURES_LAYER_SRCREV="bfceb9d2f79a8403ce1bdf1ad14a1714f781fed3"
+GFUTURES_LAYER_GIT_URL="$PROJECT_URL/$GFUTURES_LAYER_NAME.git"
 if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_GFUTURES '") == true ]; then
 	# gfutures
-	clone_meta '' $COMPATIBLE_BRANCH $GFUTURES_LAYER_GIT_URL '' $BUILD_ROOT_DIR/$GFUTURES_LAYER_NAME
-	echo -e "\033[32;1mOK ...\033[0m\n"
+	fetch_meta "" $GFUTURES_LAYER_BRANCH $GFUTURES_LAYER_GIT_URL "$GFUTURES_LAYER_SRCREV" $BUILD_ROOT_DIR/$GFUTURES_LAYER_NAME
 fi
-# airdigital
-if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_AIRDIGITAL '") == true ]; then
-	clone_meta '' $COMPATIBLE_BRANCH $AIRDIGITAL_LAYER_GIT_URL '' $BUILD_ROOT_DIR/$AIRDIGITAL_LAYER_NAME
-	echo -e "\033[32;1mOK ...\033[0m\n"
-fi
-# edision
-if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_EDISION '") == true ]; then
-	clone_meta '' $COMPATIBLE_BRANCH $EDISION_LAYER_GIT_URL '' $BUILD_ROOT_DIR/$EDISION_LAYER_NAME
-	echo -e "\033[32;1mOK ...\033[0m\n"
-fi
-# hisilicon #TODO: move into gfutures
-	if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_HISI '") == true; then
-	clone_meta '' $COMPATIBLE_BRANCH $HISI_LAYER_GIT_URL '' $BUILD_ROOT_DIR/$HISI_LAYER_NAME
-	echo -e "\033[32;1mOK ...\033[0m\n"
-fi
-# ceryon
+
+# fetch required branch from meta-ceryon
+CERYON_LAYER_NAME=meta-ceryon
+CERYON_LAYER_BRANCH="master"
+CERYON_LAYER_SRCREV="4a02145fc4c233b64f6110d166c46b59ebe73371"
+CERYON_LAYER_GIT_URL="$PROJECT_URL/$CERYON_LAYER_NAME.git"
 if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_CERYON '") == true ]; then
-	clone_meta '' $COMPATIBLE_BRANCH $CERYON_LAYER_GIT_URL '' $BUILD_ROOT_DIR/$CERYON_LAYER_NAME
-	echo -e "\033[32;1mOK ...\033[0m\n"
+	fetch_meta "" $CERYON_LAYER_BRANCH $CERYON_LAYER_GIT_URL "$CERYON_LAYER_SRCREV" $BUILD_ROOT_DIR/$CERYON_LAYER_NAME
 fi
 
+# fetch required branch from meta-hisilicon #TODO: move into gfutures
+HISI_LAYER_NAME=meta-hisilicon  #TODO: move into gfutures
+HISI_LAYER_BRANCH="master"
+HISI_LAYER_SRCREV="e85e1781704d96f5dfa0c554cf81d24c147d888c"
+HISI_LAYER_GIT_URL="$PROJECT_URL/$HISI_LAYER_NAME.git"
+if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_HISI '") == true; then
+	fetch_meta "" $HISI_LAYER_BRANCH $HISI_LAYER_GIT_URL "$HISI_LAYER_SRCREV" $BUILD_ROOT_DIR/$HISI_LAYER_NAME
+fi
 
-# create included config file from sample file
+# fetch required branch from meta-edision
+EDISION_LAYER_NAME=meta-edision
+EDISION_LAYER_BRANCH="master"
+EDISION_LAYER_SRCREV="1b2c422d9218e86ca1cd9d20431d42e716b1d714"
+EDISION_LAYER_GIT_URL="$PROJECT_URL/$EDISION_LAYER_NAME.git"
+if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_EDISION '") == true ]; then
+	fetch_meta '' $EDISION_LAYER_BRANCH $EDISION_LAYER_GIT_URL "$EDISION_LAYER_SRCREV" $BUILD_ROOT_DIR/$EDISION_LAYER_NAME
+fi
+
+## Configure buildsystem
+# Create included config file from sample file
 if test ! -f $BASEPATH/local.conf.common.inc; then
-	echo -e "\033[37;1mCONFIG:\033[0m\tcreate $BASEPATH/local.conf.common.inc as include file for layer configuration ..."
+	my_echo "\033[37;1mCONFIG:\033[0mCreate $BASEPATH/local.conf.common.inc as include file for local layer configuration ..."
 	do_exec "cp -v $BASEPATH/local.conf.common.inc.sample $BASEPATH/local.conf.common.inc"
 fi
 
-
-# create configuration for machine
+# Create configuration for machine
+my_echo "\033[37;1mCreate configurations ...\033[0m"
 if [ "$MACHINE" == "all" ]; then
 	for M in  $MACHINES ; do
 		create_local_config $M;
 	done
+	my_echo "\033[32;1mdone!\033[0m\n"
 else
 	create_local_config $MACHINE;
+	my_echo "\033[32;1mdone!\033[0m\n"
 fi
 
-
+## Create distribution structure
 create_dist_tree;
 
-echo -e "\033[37;1mNOTE:\033[0m"
-
-# check and create distribution directory inside html directory for online update
-if test ! -L /var/www/html/dist; then
-	echo -e "\033[37;1m\tLocal setup for package online update.\033[0m"
-	echo -e "\t############################################################################################"
-	echo -e "\t/var/www/html/dist doesn't exists."
-	echo -e "\tIf you want to use online update, please configure your webserver and use dist content"
-	echo -e "\t"
-	echo -e "\tAn easy way is to create a symlink to dist directory:"
-	echo -e "\t"
-	echo -e "\t\t\033[37;1msudo ln -s $BASEPATH/dist /var/www/html/dist\033[0m"
-
+## check and create distribution directory inside httpd directory for online update
+if test ! -L $HTTPD_DIST_DIR; then
+	my_echo "\033[37;1mLocal setup for package online update.\033[0m"
+	my_echo "------------------------------------------------------------------------------------------------"
+	my_echo "The httpd directory $HTTPD_DIST_DIR doesn't exists."
+	my_echo "If you want to use online update, please configure your webserver and use dist content"
+	my_echo ""
+	my_echo "An easy way is to create a symlink to dist directory:"
+	my_echo ""
+	my_echo "\033[37;1m\tsudo ln -s $BASEPATH/dist $HTTPD_DIST_DIR\033[0m"
 fi
-echo -e "\t"
-echo -e "\033[37;1m\tLocal environment setup\033[0m"
-echo -e "\t############################################################################################"
-echo -e "\t$BASEPATH/local.conf.common.inc was created by the 1st call of $0 from"
-echo -e "\t$BASEPATH/local.conf.common.inc.sample"
-echo -e "\tIf this file already exists nothing was changed on this file for your configuration."
-echo -e "\tYou should check $BASEPATH/local.conf.common.inc and modify this file if required."
-echo -e "\t"
-echo -e "\tUnlike here: Please check this files for modifications or upgrades:"
-echo -e "\t"
-echo -e "\t\t\033[37;1m$BUILD_ROOT/<machine>/bblayer.conf\033[0m"
-echo -e "\t\t\033[37;1m$BUILD_ROOT/<machine>/local.conf\033[0m"
-# echo -e "\t############################################################################################"
-echo -e "\t"
-echo -e "\033[37;1m\tStart build\033[0m"
-echo -e "\t############################################################################################"
-echo -e "\tNow you are ready to build your own images and packages."
-echo -e "\tSelectable machines are:"
-echo -e "\t"
-echo -e "\t\t\033[37;1m$MACHINES\033[0m"
-echo -e "\t"
-echo -e "\t Select your favorite machine (or identical) and the next steps are:\033[37;1m"
-echo -e "\t"
-echo -e "\t\tcd $BUILD_ROOT_DIR"
-echo -e "\t\t. ./oe-init-build-env build/<machine>"
-echo -e "\t\tbitbake neutrino-image"
-echo -e "\t\033[0m"
 
-echo -e "\t"
-echo -e "\033[37;1m\tUpdating meta-layers\033[0m"
-echo -e "\t############################################################################################"
-echo -e "\tExecute init script again."
-echo -e "\t"
-echo -e "\tFor more informations and next steps take a look at the README.md!"
-echo -e "\t"
-echo -e "\033[32;1mDONE!\033[0m"
+## Show results
+my_echo "\033[32;1m\nSummary:\033[0m"
+my_echo "\033[32;1m------------------------------------------------------------------------------------------------\033[0m"
+my_echo ""
+my_echo "\033[37;1mLocal environment setup was created\033[0m"
+my_echo "------------------------------------------------------------------------------------------------"
+my_echo "On 1st call of $0 Your config was created at this file from the template sample file"
+my_echo ""
+my_echo "\033[37;1m\t$BASEPATH/local.conf.common.inc\033[0m"
+my_echo ""
+my_echo "If this file has already exists some entries could be migrated or added on this file."
+my_echo "You should check $BASEPATH/local.conf.common.inc and modify it if required."
+my_echo ""
+my_echo "Unlike here: Please check this files for modifications or upgrades:"
+my_echo ""
+my_echo "\033[37;1m\t$BUILD_ROOT/<machine>/bblayer.conf\033[0m"
+my_echo "\033[37;1m\t$BUILD_ROOT/<machine>/local.conf\033[0m"
+
+my_echo ""
+my_echo "\033[37;1mStart build\033[0m"
+my_echo "------------------------------------------------------------------------------------------------"
+my_echo "Now you are ready to build your own images and packages."
+my_echo "Selectable machines are:"
+my_echo ""
+my_echo "\033[37;1m\t$MACHINES\033[0m"
+my_echo ""
+my_echo "Select your favorite machine (or identical) and the next steps are:\033[37;1m"
+my_echo ""
+my_echo "\tcd $BUILD_ROOT_DIR"
+my_echo "\t. ./oe-init-build-env build/<machine>"
+my_echo "\tbitbake neutrino-image"
+my_echo "\033[0m"
+
+my_echo ""
+my_echo "\033[37;1mUpdating build evironment and meta-layers\033[0m"
+my_echo "------------------------------------------------------------------------------------------------"
+my_echo ""
+my_echo "\033[37;1m\texecute: $USER_CALL\033[0m \033[32;1m--update\033[0m"
+my_echo ""
+my_echo "------------------------------------------------------------------------------------------------"
+my_echo "For more informations and next steps take a look at the README.md!"
+my_echo "\033[32;1mDONE!\033[0m"
 
 exit 0

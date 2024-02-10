@@ -1,9 +1,25 @@
 #!/bin/bash
 
+## Function to replace the echo command
+function my_echo() {
+	local no_term_output="$1"
+	# Clean up text
+	if [ "$no_term_output" == "true" ]; then
+		shift
+	fi
+    local cleaned_output=$(echo -e "${@}" | sed -r "s/\x1B\[[0-9;]*[a-zA-Z]//g")
+    # Write to log
+    echo "[ $(date '+%Y-%m-%d %H:%M:%S') ] - ${cleaned_output}" >> "$LOGFILE"
+    # Show on terminal
+    if [[ "$no_term_output" != "true" && -t 1 ]]; then
+        echo -e "${@}"
+    fi
+}
+
 # function for checking of valid machine(s)
 function is_valid_machine ()
 {
-	ISM=$1
+	local ISM=$1
 	for M in $MACHINES ; do
 		if [ "$ISM" == "$M" ] || [ "$MACHINE" == "all" ]; then
 			echo true
@@ -15,39 +31,53 @@ function is_valid_machine ()
 }
 
 function do_exec() {
-	DEX_ARG1=$1
-	DEX_ARG2=$2
-	DEX_ARG3=$3
-# 	rm -f $TMP_LOGFILE
-	echo "[`date '+%Y%m%d_%H%M%S'`] EXEC: $DEX_ARG1" >> $LOGFILE
-	if [ "$DEX_ARG3" == "show_output" ]; then
-		$DEX_ARG1
-	else
-		$DEX_ARG1 > /dev/null 2>> $TMP_LOGFILE
-	fi
-#	echo -e "DEX_ARG1 [$DEX_ARG1] DEX_ARG2 [$DEX_ARG2] DEX_ARG3 [$DEX_ARG3]"
-	if test -f $TMP_LOGFILE; then
-		LOGTEXT=`cat $TMP_LOGFILE`
-		echo > $TMP_LOGFILE
-	fi
-	if [ $? != 0 ]; then
-		if [ "$DEX_ARG2" != "no_exit" ]; then
-			if [ "$LOGTEXT" != "" ]; then
-				echo -e "\033[31;1mERROR:\t\033[0m $LOGTEXT"
-				echo "ERROR: $LOGTEXT" >> $LOGFILE
-			fi
-			exit 1
-		else
-			if [ "$LOGTEXT" != "" ]; then
-				echo -e "\033[37;1mNOTE:\t\033[0m $LOGTEXT"
-				echo "NOTE: $LOGTEXT" >> $LOGFILE
- 			fi
-		fi
-	fi
+    local cmd="$1"
+    local exit_behavior="$2"
+    local show_output="$3"
+    local log_text
+    local cmd_exit_status
+
+    my_echo true "[EXEC] $cmd"
+
+    # TODO: Evaluate alternatives to 'eval' for executing complex commands
+	# Using 'eval' here allows for dynamic execution of commands that may include
+	# special characters, variable expansions, or other complexities that are
+	# difficult to handle with direct execution methods. However, 'eval' comes with
+	# significant security implications, especially when dealing with untrusted input.
+	# It executes the given string as a bash command, which can lead to code injection
+	# vulnerabilities if not carefully managed. This usage is a temporary solution to
+	# achieve desired functionality and should be revisited to explore safer alternatives.
+    if [[ "$show_output" == "show_output" ]]; then
+        eval $cmd 2>> "$TMP_LOGFILE"
+    else
+        eval $cmd > /dev/null 2>> "$TMP_LOGFILE"
+    fi
+
+    cmd_exit_status=${PIPESTATUS[0]} # Get exit status of the first command in the last pipe
+
+    if [[ -f "$TMP_LOGFILE" ]]; then
+        log_text=$(cat "$TMP_LOGFILE")
+        >> "$LOGFILE" # Clear TMP_LOGFILE after reading
+    fi
+
+    if [[ $cmd_exit_status -ne 0 ]]; then
+        if [[ "$exit_behavior" != "no_exit" ]]; then
+            if [[ -n "$log_text" ]]; then
+                my_echo -e "\033[31;1mERROR:\033[0m $log_text"
+                my_echo "ERROR: $log_text" >> "$LOGFILE"
+            fi
+            exit 1
+        else
+            if [[ -n "$log_text" ]]; then
+                my_echo -e "\033[37;1mNOTE:\033[0m $log_text"
+                my_echo "NOTE: $log_text" >> "$LOGFILE"
+            fi
+        fi
+    fi
 }
 
 function get_metaname () {
-	TMP_NAME=$1
+	local TMP_NAME=$1
 
 	if [ "$TMP_NAME" == "hd51" ] || [ "$TMP_NAME" == "bre2ze4k" ] || [ "$TMP_NAME" == "mutant51" ] || [ "$TMP_NAME" == "ax51" ]; then
 		META_NAME="gfutures"
@@ -66,60 +96,74 @@ function get_metaname () {
 }
 
 # clone or update required branch for required meta-<layer>
-function clone_meta () {
+function fetch_meta() {
+    local layer_name="$1"
+    local branch_name="$2"
+    local layer_git_url="$3"
+    local branch_hash="$4"
+    local target_git_path="$5"
+    local patch_list="$6"
 
-	LAYER_NAME=$1
-	BRANCH_NAME=$2
-	LAYER_GIT_URL=$3
-	BRANCH_HASH=$4
-	TARGET_GIT_PATH=$5
-	PATCH_LIST=$6
-	
-	#echo -e "Parameters= $LAYER_NAME $BRANCH_NAME $LAYER_GIT_URL $BRANCH_HASH $TARGET_GIT_PATH $PATCH_LIST"
+    local GIT_SSH_COMMAND=""
+    if [[ "$GIT_SSH_KEYFILE" != "" ]]; then
+        export GIT_SSH_COMMAND="$SSH -i \"$GIT_SSH_KEYFILE\""
+    fi
 
-	TMP_LAYER_BRANCH=$BRANCH_NAME
-
-	if test ! -d $TARGET_GIT_PATH/.git; then
-		echo -e "\033[35;1mclone branch $BRANCH_NAME from $LAYER_GIT_URL\033[0m"
-		do_exec "git clone -b $BRANCH_NAME $LAYER_GIT_URL $TARGET_GIT_PATH" ' ' 'show_output'
-		do_exec "git -C $TARGET_GIT_PATH checkout $BRANCH_HASH -b $IMAGE_VERSION"
-		do_exec "git -C $TARGET_GIT_PATH pull -r origin $BRANCH_NAME" ' ' 'show_output'
-		echo -e "\033[35;1mpatching $TARGET_GIT_PATH.\033[0m"
-		for PF in  $PATCH_LIST ; do
-			PATCH_FILE="$FILES_DIR/$PF"
-			echo -e "apply: $PATCH_FILE"
-			do_exec "git -C $TARGET_GIT_PATH am $PATCH_FILE" ' ' 'show_output'
-		done
-	else
-		TMP_LAYER_BRANCH=`git -C $TARGET_GIT_PATH rev-parse --abbrev-ref HEAD`
-		echo -e "\033[35;1mupdate $TARGET_GIT_PATH $TMP_LAYER_BRANCH\033[0m"
-		do_exec "git -C $TARGET_GIT_PATH stash" 'no_exit'
-
-		if [ "$TMP_LAYER_BRANCH" != "$BRANCH_NAME" ]; then
-			echo -e "switch from branch $TMP_LAYER_BRANCH to branch $BRANCH_NAME..."
-			do_exec "git -C $TARGET_GIT_PATH checkout  $BRANCH_NAME"
+    if [[ ! -d "$target_git_path/.git" ]]; then
+		my_echo -e "Clone branch $branch_name from $layer_git_url into $target_git_path"
+		if do_exec "git clone -b "$branch_name" "$layer_git_url" "$target_git_path""; then
+			do_exec "git -C "$target_git_path" checkout "$branch_hash" -b "$IMAGE_VERSION""
+			do_exec "git -C "$target_git_path" pull -r origin "$branch_name""
+		else
+			my_echo -e "\033[31;1mError cloning $layer_name from $layer_git_url\033[0m"
+			return 1
 		fi
-
-		#echo -e "\033[35;1mUPDATE:\033[0m\nupdate $LAYER_NAME from (branch $BRANCH_NAME) $LAYER_GIT_URL ..."
-		do_exec "git -C $TARGET_GIT_PATH pull -r origin $BRANCH_NAME" ' ' 'show_output'
-
-		if [ "$TMP_LAYER_BRANCH" != "$BRANCH_NAME" ]; then
-			echo -e "\033[35;1mswitch back to branch $TMP_LAYER_BRANCH\033[0m"
-			do_exec "git -C $TARGET_GIT_PATH checkout  $TMP_LAYER_BRANCH"
-			echo -e "\033[35;1mrebase branch $BRANCH_NAME into branch $TMP_LAYER_BRANCH\033[0m"
-			do_exec "git -C $TARGET_GIT_PATH rebase  $BRANCH_NAME" ' ' 'show_output'
+		## Patching
+		if [[ -n "$patch_list" ]]; then
+			for patch_file in $patch_list; do
+				# First, check if the patch can be applied cleanly
+				my_echo -e "Applying patch: $patch_file"
+				if do_exec "git -C "$target_git_path" apply --check "$FILES_DIR/$patch_file""; then
+					# Attempt to apply the patch if 'apply --check' was successful
+					if ! do_exec "git -C "$target_git_path" am < "$FILES_DIR/$patch_file""; then
+						# Error message if 'git am' fails
+						my_echo -e "\033[31;1mFailed to apply patch $patch_file to $layer_name\033[0m"
+						return 1
+					fi
+				else
+					# Message about skipping if 'apply --check' fails
+					my_echo -e "\033[33;1mSkipping patch $patch_file already applied or cannot be applied cleanly.\033[0m"
+				fi
+			done
 		fi
+    else
+		if [[ $DO_UPDATE == "$true" ]]; then
+			my_echo -e "Update $target_git_path on branch $branch_name"
+			if [[ $(git -C "$target_git_path" stash list) ]]; then
+				my_echo -e "Stashing changes in $target_git_path"
+				do_exec "git -C "$target_git_path" stash push --include-untracked"
+				local stash_applied=true
+			fi
+			do_exec "git -C "$target_git_path" checkout "$branch_name"" || do_exec "git -C "$target_git_path" checkout -b "$branch_name""
+			do_exec "git -C "$target_git_path" pull -r origin "$branch_name""
+			if [[ "$stash_applied" == true ]]; then
+				if do_exec "git -C "$target_git_path" stash pop"; then
+					my_echo -e "Stash applied successfully."
+				else
+					my_echo -e "\033[33;1mNote: Stash could not be applied. Manual intervention required.\033[0m"
+					return 1
+				fi
+			fi
+        fi
+    fi
 
-		do_exec "git -C $TARGET_GIT_PATH stash pop" 'no_exit'
-	fi
-
-	return 0
+    return 0
 }
 
 # clone/update required branch from tuxbox bsp layers
 function is_required_machine_layer ()
 {
-	HIM1=$1
+	local HIM1=$1
 	for M in $HIM1 ; do
 		if [ "$M" == "$MACHINE" ]; then
 			echo true
@@ -132,7 +176,7 @@ function is_required_machine_layer ()
 
 # get matching machine type from machine build id
 function get_real_machine_type() {
-	MACHINE_TYPE=$1
+	local MACHINE_TYPE=$1
 	if  [ "$MACHINE_TYPE" == "mutant51" ] || [ "$MACHINE_TYPE" == "ax51" ] || [ "$MACHINE_TYPE" == "hd51" ]; then
 		RMT_RES="hd51"
 	elif  [ "$MACHINE_TYPE" == "hd60" ] || [ "$MACHINE_TYPE" == "ax60" ]; then
@@ -149,7 +193,7 @@ function get_real_machine_type() {
 
 # get matching machine build id from machine type
 function get_real_machine_id() {
-	MACHINEBUILD=$1
+	local MACHINEBUILD=$1
 	if  [ "$MACHINEBUILD" == "hd51" ]; then
 		RMI_RES="ax51"
 	elif  [ "$MACHINEBUILD" == "hd60" ]; then
@@ -164,11 +208,11 @@ function get_real_machine_id() {
 	echo $RMI_RES
 }
 
-# function to create file enrties into a file, already existing entry will be ignored
+# function to create file entries into a file, already existing entry will be ignored
 function set_file_entry () {
-	FILE_NAME=$1
-	FILE_SEARCH_ENTRY=$2
-	FILE_NEW_ENTRY=$3
+	local FILE_NAME=$1
+	local FILE_SEARCH_ENTRY=$2
+	local FILE_NEW_ENTRY=$3
 	if test ! -f $FILE_NAME; then
 		echo $FILE_NEW_ENTRY > $FILE_NAME
 		return 1
@@ -186,38 +230,39 @@ function set_file_entry () {
 	return 0
 }
 
+
 # function to create configuration for box types
 function create_local_config () {
-	CLC_ARG1=$1
+	local machine=$1
 
-	if [ "$CLC_ARG1" != "all" ]; then
+	if [ "$machine" != "all" ]; then
 
-		MACHINE_BUILD_DIR=$BUILD_ROOT/$CLC_ARG1
+		MACHINE_BUILD_DIR=$BUILD_ROOT/$machine
 		do_exec "mkdir -p $BUILD_ROOT"
 
-		BACKUP_CONFIG_DIR="$BACKUP_PATH/$CLC_ARG1/conf"
+		BACKUP_CONFIG_DIR="$BACKUP_PATH/$machine/conf"
 		do_exec "mkdir -p $BACKUP_CONFIG_DIR"
 
 		LOCAL_CONFIG_FILE_PATH=$MACHINE_BUILD_DIR/conf/local.conf
 
-		if test -d $BUILD_ROOT_DIR/$CLC_ARG1; then
-			if test ! -L $BUILD_ROOT_DIR/$CLC_ARG1; then
+		if test -d $BUILD_ROOT_DIR/$machine; then
+			if test ! -L $BUILD_ROOT_DIR/$machine; then
 				# generate build/config symlinks for compatibility
-				echo -e "\033[37;1m\tcreate compatible symlinks directory for $CLC_ARG1 environment ...\033[0m"
-				do_exec "mv -v $BUILD_ROOT_DIR/$CLC_ARG1 $BUILD_ROOT"
-				do_exec "ln -sv $MACHINE_BUILD_DIR $BUILD_ROOT_DIR/$CLC_ARG1"
+				my_echo -e "\033[37;1m\tcreate compatible symlinks directory for $machine environment ...\033[0m"
+				do_exec "mv $BUILD_ROOT_DIR/$machine $BUILD_ROOT"
+				do_exec "ln -s $MACHINE_BUILD_DIR $BUILD_ROOT_DIR/$machine"
 			fi
 		fi
 
 		# generate default config
 		if test ! -d $MACHINE_BUILD_DIR/conf; then
-			echo -e "\033[37;1m\tcreating build directory for $CLC_ARG1 environment ...\033[0m"
+			my_echo -e "\033[37;1m\tcreating build directory for $machine environment ...\033[0m"
 			do_exec "cd $BUILD_ROOT_DIR"
 			do_exec ". ./oe-init-build-env $MACHINE_BUILD_DIR"
 			# we need a clean config file
 			if test -f $LOCAL_CONFIG_FILE_PATH & test ! -f $LOCAL_CONFIG_FILE_PATH.origin; then
 				# so we save the origin local.conf
-				do_exec "mv -v $LOCAL_CONFIG_FILE_PATH $LOCAL_CONFIG_FILE_PATH.origin"
+				do_exec "mv $LOCAL_CONFIG_FILE_PATH $LOCAL_CONFIG_FILE_PATH.origin"
 			fi
 			do_exec "cd $BASEPATH"
 			echo "[Desktop Entry]" > $BUILD_ROOT/.directory
@@ -230,36 +275,41 @@ function create_local_config () {
 
 			if test -f $LOCAL_CONFIG_FILE_PATH; then
 				HASHSTAMP=`MD5SUM $LOCAL_CONFIG_FILE_PATH`
-				do_exec "cp -v $LOCAL_CONFIG_FILE_PATH $BACKUP_CONFIG_DIR/local.conf.$HASHSTAMP.$BACKUP_SUFFIX"
+				do_exec "cp $LOCAL_CONFIG_FILE_PATH $BACKUP_CONFIG_DIR/local.conf.$HASHSTAMP.$BACKUP_SUFFIX"
 
 				# migrate settings after server switch
-				echo -e "migrate settings within $LOCAL_CONFIG_FILE_INC_PATH..."
-				sed -i -e 's|http://archiv.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH
-				sed -i -e 's|https://archiv.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH
+				my_echo "migrate settings within $LOCAL_CONFIG_FILE_INC_PATH..."
+				do_exec "sed -i -e 's|http://archiv.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH"
+				do_exec "sed -i -e 's|https://archiv.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH"
 
-				sed -i -e 's|http://archiv.tuxbox-neutrino.org/sources|https://n4k.sourceforge.io/sources|' $LOCAL_CONFIG_FILE_INC_PATH
-				sed -i -e 's|https://archiv.tuxbox-neutrino.org/sources|https://n4k.sourceforge.io/sources|' $LOCAL_CONFIG_FILE_INC_PATH
+				do_exec "sed -i -e 's|http://archiv.tuxbox-neutrino.org/sources|https://n4k.sourceforge.io/sources|' $LOCAL_CONFIG_FILE_INC_PATH"
+				do_exec "sed -i -e 's|https://archiv.tuxbox-neutrino.org/sources|https://n4k.sourceforge.io/sources|' $LOCAL_CONFIG_FILE_INC_PATH"
 
-				sed -i -e 's|http://sstate.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH
-				sed -i -e 's|https://sstate.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH
+				do_exec "sed -i -e 's|http://sstate.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH"
+				do_exec "sed -i -e 's|https://sstate.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH"
 
-				sed -i -e 's|archiv.tuxbox-neutrino.org|n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH
-				sed -i -e 's|sstate.tuxbox-neutrino.org|n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH
+				do_exec "sed -i -e 's|archiv.tuxbox-neutrino.org|n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH"
+				do_exec "sed -i -e 's|sstate.tuxbox-neutrino.org|n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_INC_PATH"
 
-				echo -e "migrate settings within $LOCAL_CONFIG_FILE_PATH"
-				sed -i -e 's|http://archiv.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH
-				sed -i -e 's|https://archiv.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH
+				my_echo "migrate settings within $LOCAL_CONFIG_FILE_PATH"
+				do_exec "sed -i -e 's|http://archiv.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH"
+				do_exec "sed -i -e 's|https://archiv.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH"
 
-				sed -i -e 's|http://archiv.tuxbox-neutrino.org/sources|https://n4k.sourceforge.io/sources|' $LOCAL_CONFIG_FILE_PATH
-				sed -i -e 's|https://archiv.tuxbox-neutrino.org/sources|https://n4k.sourceforge.io/sources|' $LOCAL_CONFIG_FILE_PATH
+				do_exec "sed -i -e 's|http://archiv.tuxbox-neutrino.org/sources|https://n4k.sourceforge.io/sources|' $LOCAL_CONFIG_FILE_PATH"
+				do_exec "sed -i -e 's|https://archiv.tuxbox-neutrino.org/sources|https://n4k.sourceforge.io/sources|' $LOCAL_CONFIG_FILE_PATH"
 
-				sed -i -e 's|http://sstate.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH
-				sed -i -e 's|https://sstate.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH
+				do_exec "sed -i -e 's|http://sstate.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH"
+				do_exec "sed -i -e 's|https://sstate.tuxbox-neutrino.org|https://n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH"
 
-				sed -i -e 's|archiv.tuxbox-neutrino.org|n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH
-				sed -i -e 's|sstate.tuxbox-neutrino.org|n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH
+				do_exec "sed -i -e 's|archiv.tuxbox-neutrino.org|n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH"
+				do_exec "sed -i -e 's|sstate.tuxbox-neutrino.org|n4k.sourceforge.io|' $LOCAL_CONFIG_FILE_PATH"
 
-				echo -e "\033[32;1mdone ...\033[0m\n"
+				search_line="#UPDATE_SERVER_URL = \"http:\/\/@hostname@\""
+				add_line="UPDATE_SERVER_URL = \"http://$HTTP_ADDRESS\""
+				if ! grep -qF -- "$add_line" "$LOCAL_CONFIG_FILE_INC_PATH"; then
+					# Wenn nicht, füge die neue Zeile nach der spezifischen Zeile ein
+					sed -i -e "/$search_line/a $add_line" "$LOCAL_CONFIG_FILE_INC_PATH"
+				fi
 			fi
 
 			# add init note
@@ -269,18 +319,18 @@ function create_local_config () {
 			set_file_entry $LOCAL_CONFIG_FILE_PATH "$BASEPATH/local.conf.common.inc" "include $BASEPATH/local.conf.common.inc"
 
 			# add line 2, machine type
-			M_TYPE='MACHINE = "'`get_real_machine_type $CLC_ARG1`'"'
+			M_TYPE='MACHINE = "'`get_real_machine_type $machine`'"'
 			if set_file_entry $LOCAL_CONFIG_FILE_PATH "MACHINE" "$M_TYPE" == 1; then
-				echo -e "\t\033[37;1m$LOCAL_CONFIG_FILE_PATH has been upgraded with entry: $M_TYPE \033[0m"
+				my_echo -e "\t\033[37;1m$LOCAL_CONFIG_FILE_PATH has been upgraded with entry: $M_TYPE \033[0m"
 			fi
 
 			# add line 3, machine build
-			M_ID='MACHINEBUILD = "'`get_real_machine_id $CLC_ARG1`'"'
+			M_ID='MACHINEBUILD = "'`get_real_machine_id $machine`'"'
 			if set_file_entry $LOCAL_CONFIG_FILE_PATH "MACHINEBUILD" "$M_ID" == 1; then
-				echo -e "\t\033[37;1m$LOCAL_CONFIG_FILE_PATH has been upgraded with entry: $M_ID \033[0m"
+				my_echo -e "\t\033[37;1m$LOCAL_CONFIG_FILE_PATH has been upgraded with entry: $M_ID \033[0m"
 			fi
 		else
-			echo -e "\033[31;1mERROR:\033[0m:\ttemplate $BASEPATH/local.conf.common.inc not found..."
+			my_echo -e "\033[31;1mERROR:\033[0m:\ttemplate $BASEPATH/local.conf.common.inc not found..."
 			exit 1
 		fi
 
@@ -289,17 +339,17 @@ function create_local_config () {
 		# craete backup for bblayer.conf
 		if test -f $BBLAYER_CONF_FILE; then
 			HASHSTAMP=`MD5SUM $BBLAYER_CONF_FILE`
-			do_exec "cp -v $BBLAYER_CONF_FILE $BACKUP_CONFIG_DIR/bblayer.conf.$HASHSTAMP.$BACKUP_SUFFIX"
+			do_exec "cp $BBLAYER_CONF_FILE $BACKUP_CONFIG_DIR/bblayer.conf.$HASHSTAMP.$BACKUP_SUFFIX"
 		fi
 
-		META_MACHINE_LAYER=meta-`get_metaname $CLC_ARG1`
+		META_MACHINE_LAYER=meta-`get_metaname $machine`
 
 		# add layer entries into bblayer.conf
 		set_file_entry $BBLAYER_CONF_FILE "generated" '# auto generated entries by init script'
 		LAYER_LIST=" $TUXBOX_LAYER_NAME $META_MACHINE_LAYER $OE_LAYER_NAME/meta-oe $OE_LAYER_NAME/meta-networking $PYTHON2_LAYER_NAME $QT5_LAYER_NAME "
 		for LL in $LAYER_LIST ; do
 			if set_file_entry $BBLAYER_CONF_FILE $LL 'BBLAYERS += " '$BUILD_ROOT_DIR'/'$LL' "' == 1;then
-				echo -e "\t\033[37;1m$BBLAYER_CONF_FILE has been upgraded with entry: $LL... \033[0m"
+				my_echo -e "\t\033[37;1m$BBLAYER_CONF_FILE has been upgraded with entry: $LL... \033[0m"
 			fi
 		done
 	fi
@@ -311,7 +361,7 @@ function create_dist_tree () {
 	# create dist dir
 	DIST_BASEDIR="$BASEPATH/dist/$IMAGE_VERSION"
 	if test ! -d "$DIST_BASEDIR"; then
-		echo -e "\033[37;1mcreate dist directory:\033[0m   $DIST_BASEDIR"
+		my_echo -e "\033[37;1mcreate dist directory:\033[0m   $DIST_BASEDIR"
 		do_exec "mkdir -p $DIST_BASEDIR"
 	fi
 
@@ -319,7 +369,7 @@ function create_dist_tree () {
 	DIST_LIST=`ls $BUILD_ROOT`
 	for DL in  $DIST_LIST ; do
 		DEPLOY_DIR="$BUILD_ROOT/$DL/tmp/deploy"
-		do_exec "ln -sfv $DEPLOY_DIR $DIST_BASEDIR/$DL"
+		do_exec "ln -sf $DEPLOY_DIR $DIST_BASEDIR/$DL"
 		if test -L "$DIST_BASEDIR/$DL/deploy"; then
 			do_exec "unlink -v $DIST_BASEDIR/$DL/deploy"
 		fi
@@ -327,7 +377,7 @@ function create_dist_tree () {
 }
 
 function MD5SUM () {
-	MD5SUM_FILE=$1
+	local MD5SUM_FILE=$1
 	MD5STAMP=`md5sum $MD5SUM_FILE |cut -f 1 -d " "`
 	echo $MD5STAMP
 }
