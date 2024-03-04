@@ -12,6 +12,7 @@ GIT_SSH_KEYFILE=""
 true="1"
 false="0"
 DO_UPDATE=$false
+DO_RESET=$false
 FILES_DIR="$BASEPATH/files"
 HTTPD_DIST_HOSTNAME="localhost"
 HTTPD_DIST_DIR="/var/www/html/dist"
@@ -114,6 +115,7 @@ show_help() {
     echo "  -p, --project-url         Project-URL where to find project meta layers,"
     echo "                            e.g. for read and write access: git@github.com:tuxbox-neutrino, default = $PROJECT_URL"
     echo "  -u, --update              Update your project meta layers"
+    echo "  -r, --reset               Resets the tmp dir within the build directory, $BASEPATH/poky-x.x.x/build/<machine>/tmp. The /tmp directory will be not deleted but renamed"
     echo "  -i, --id-rsa-file         Path to your preferred id rsa file, default: users id rsa file, e.g. $HOME/.ssh/id_rsa"
     echo ""
     echo "  -h, --help                Show this help"
@@ -121,7 +123,7 @@ show_help() {
 }
 
 ## Processing command line arguments
-TEMP=$(getopt -o up:m:i:h --long httpd-dist-hostname:,httpd-dist-dir:,update,project-url:,machine:,id-rsa-file,help,version -n 'init' -- "$@")
+TEMP=$(getopt -o rup:m:i:h --long reset,httpd-dist-hostname:,httpd-dist-dir:,update,project-url:,machine:,id-rsa-file,help,version -n 'init' -- "$@")
 if [ $? != 0 ] ; then
 	my_echo "Error while process arguments" >&2
 	show_help
@@ -146,6 +148,8 @@ while true ; do
             HTTPD_DIST_DIR="$2"; shift 2 ;;
 		-u|--update)
 			DO_UPDATE="$true"; shift ;;
+		-r|--reset)
+			DO_RESET="$true"; shift ;;
         -h|--help)
             show_help
             exit 0 ;;
@@ -168,14 +172,21 @@ my_echo "-----------------------------------------------------------------------
 my_echo "Buildenv Version:          \033[37;1m$INIT_VERSION\033[0m "
 my_echo "Image Version:             \033[37;1m$IMAGE_VERSION\033[0m "
 my_echo "Compatible OE-branch:      \033[37;1m$COMPATIBLE_BRANCH\033[0m "
+my_echo "Buildroot dir:             \033[37;1m$BUILD_ROOT_DIR\033[0m "
 my_echo "httpd Dist hostname:       \033[37;1m$HTTPD_DIST_HOSTNAME\033[0m "
 my_echo "httpd Dist directory:      \033[37;1m$HTTPD_DIST_DIR\033[0m "
-my_echo "Machine:                   \033[37;1m$MACHINE\033[0m "
+my_echo "Configured Machine(s):     \033[37;1m$MACHINE\033[0m "
 my_echo "Project Repository URL:    \033[37;1m$PROJECT_URL\033[0m "
 my_echo "SRCREV Yocto:              \033[37;1m$YOCTO_SRCREV\033[0m "
 my_echo "SRCREV OE:                 \033[37;1m$OE_SRCREV\033[0m "
 my_echo "SRCREV Python2:            \033[37;1m$PYTHON2_SRCREV\033[0m "
 my_echo "------------------------------------------------------------------------------------------"
+
+## reset build
+if [[ $DO_RESET == "$true" ]]; then
+	do_reset "$MACHINES"
+	exit 0
+fi
 
 ## Fetch meta sources
 # fetch required branch from yocto

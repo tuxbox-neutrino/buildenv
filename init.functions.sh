@@ -381,3 +381,103 @@ function MD5SUM () {
 	MD5STAMP=`md5sum $MD5SUM_FILE |cut -f 1 -d " "`
 	echo $MD5STAMP
 }
+
+# Function for selecting for items included a custom entry
+function do_select() {
+    local items="$1"
+    SELECTION=""
+    local user_input
+    local valid_selection=0
+
+    IFS=' ' read -r -a items_array <<< "$items"
+
+    echo "Please select one or more entries (numbers separated by spaces):"
+    local i=1
+    for item in "${items_array[@]}"; do
+        printf "[%2d]  %s\n" "$i" "$item"
+        ((i++))
+    done
+    printf "\n[%2d]  %s\n" "$i" "Enter custom"
+
+    printf "\nEnter the numbers of the entries or [$i] for custom entry: "
+    read -r user_input
+
+    for choice in $user_input; do
+        if [[ "$choice" =~ ^[0-9]+$ ]]; then
+            if [ "$choice" -ge 1 ] && [ "$choice" -lt "$i" ]; then
+                SELECTION+="${items_array[$choice-1]} "
+                valid_selection=1
+            elif [ "$choice" -eq "$i" ]; then
+                echo "Enter your custom entry:"
+                read -r custom_entry
+                SELECTION+="$custom_entry "
+                valid_selection=1
+            else
+                my_echo "Invalid selection: $choice"
+            fi
+        else
+            my_echo "Invalid selection: $choice"
+        fi
+    done
+
+    if [ "$valid_selection" -eq 0 ]; then
+        my_echo "No valid selection made. Process aborted."
+        return 1
+    fi
+
+    # Remove the last space
+    SELECTION=$(echo "$SELECTION" | sed 's/ $//')
+
+    my_echo "Selected entries: $SELECTION"
+    # Return the selected machines as a string
+    #"$SELECTION" has global scope
+}
+
+
+# Reset the build. Nothing is deleted, but rather renamed for safety.
+# Users can then decide when they want to clean up permanently.
+function do_reset() {
+    # Make selection and save in a variable
+    do_select "$MACHINES"
+    local selected_machines=$SELECTION
+
+    # Check if a selection was made
+    if [ -z "$selected_machines" ]; then
+        return
+    fi
+
+    # Set the start directory from where the search should begin
+    local start_directory="$BUILD_ROOT_DIR" # Adjust to base directory
+    local rename_success=0 # Tracks if a rename was performed
+
+    # Process the selected machines
+    IFS=' ' read -r -a machines_array <<< "$selected_machines"
+    for machine in "${machines_array[@]}"; do
+        my_echo "Reset is being carried out for: $machine"
+
+        # Save results from find in an array
+        readarray -t found_dirs < <(find "$start_directory" -type f -name "saved_tmpdir")
+
+        # Check if the array contains elements
+        for dir in "${found_dirs[@]}"; do
+            # Read the path from the file
+            tmp_dir_path=$(cat "$dir")
+            # Check if the path exists and matches the machine name
+            if [[ -d "$tmp_dir_path" && "$tmp_dir_path" == *"/$machine/tmp"* ]]; then
+                local timestamp=$(date '+%Y%m%d_%H%M%S')
+                do_exec "mv "$tmp_dir_path" "${tmp_dir_path%/*}/tmp_${timestamp}""
+                my_echo "Folder $tmp_dir_path was renamed to ${tmp_dir_path%/*}/tmp_${timestamp}."
+                rename_success=1
+                break # Exit the loop after the first successful rename
+            fi
+        done
+    done
+
+    # Check if reset was performed
+    if [ "$rename_success" -eq 0 ]; then
+       my_echo "\033[33mNo reset could be performed.\033[0m"
+	else
+		my_echo "Reset succeeded."
+    fi
+}
+
