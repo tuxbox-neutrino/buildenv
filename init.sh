@@ -14,8 +14,8 @@ false="0"
 DO_UPDATE=$false
 DO_RESET=$false
 FILES_DIR="$BASEPATH/files"
-HTTPD_DIST_HOSTNAME="localhost"
-HTTPD_DIST_DIR="$BASEPATH/dist"
+UPDATE_SERVER_URL="http://localhost"
+DIST_DIR="$BASEPATH/dist"
 USER_CALL="$0 $@"
 
 ## Basename of this script
@@ -31,6 +31,7 @@ rm -f $TMP_LOGFILE
 LOGFILE_NAME="$NAME"_"$TIMESTAMP.log"
 LOGFILE=$LOG_PATH/$LOGFILE_NAME
 LOGFILE_LINK=$LOG_PATH/$NAME.log
+LOCAL_CONFIG_FILE_INC_PATH=$BASEPATH/local.conf.common.inc
 echo "" >  $LOGFILE
 ln -sf $LOGFILE $LOGFILE_LINK
 my_echo "true" "$USER_CALL"
@@ -110,8 +111,8 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  -m, --machine             $HINT_MACHINES"
-    echo "      --httpd-dist-hostname IP or hostname (optional with portname) to define the update server address for local.conf.common.inc, default: $HTTPD_DIST_HOSTNAME"
-    echo "      --httpd-dist-dir      Directory where the local httpd server find the deployed images and packages, default: $HTTPD_DIST_DIR"
+    echo "      --update-url          URL (IP, hostname or domain, optional with portnumber) to define the update server address for $LOCAL_CONFIG_FILE_INC_PATH, default: $UPDATE_SERVER_URL"
+    echo "      --dist-dir            Directory where to find the deployed images and packages, default: $DIST_DIR"
     echo "  -p, --project-url         Project-URL where to find project meta layers,"
     echo "                            e.g. for read and write access: git@github.com:tuxbox-neutrino, default = $PROJECT_URL"
     echo "  -u, --update              Update your project meta layers"
@@ -119,11 +120,11 @@ show_help() {
     echo "  -i, --id-rsa-file         Path to your preferred id rsa file, default: users id rsa file, e.g. $HOME/.ssh/id_rsa"
     echo ""
     echo "  -h, --help                Show this help"
-    echo "  --version                 Show version information"
+    echo "      --version             Show version information"
 }
 
 ## Processing command line arguments
-TEMP=$(getopt -o rup:m:i:h --long reset,httpd-dist-hostname:,httpd-dist-dir:,update,project-url:,machine:,id-rsa-file,help,version -n 'init' -- "$@")
+TEMP=$(getopt -o rup:m:i:h --long reset,update-url:,dist-dir:,update,project-url:,machine:,id-rsa-file,help,version -n 'init' -- "$@")
 if [ $? != 0 ] ; then
 	my_echo "Error while process arguments" >&2
 	show_help
@@ -142,10 +143,10 @@ while true ; do
             MACHINE="$2"; shift 2 ;;
 		-i|--id-rsa-file)
             GIT_SSH_KEYFILE="$2"; shift 2 ;;
-		   --httpd-dist-hostname)
-            HTTPD_DIST_HOSTNAME="$2"; shift 2 ;;
-		   --httpd-dist-dir)
-            HTTPD_DIST_DIR="$2"; shift 2 ;;
+		   --update-url)
+            UPDATE_SERVER_URL="$2"; shift 2 ;;
+		   --dist-dir)
+            DIST_DIR="$2"; shift 2 ;;
 		-u|--update)
 			DO_UPDATE="$true"; shift ;;
 		-r|--reset)
@@ -172,9 +173,9 @@ my_echo "-----------------------------------------------------------------------
 my_echo "Buildenv Version:          \033[37;1m$INIT_VERSION\033[0m "
 my_echo "Image Version:             \033[37;1m$IMAGE_VERSION\033[0m "
 my_echo "Compatible OE-branch:      \033[37;1m$COMPATIBLE_BRANCH\033[0m "
-my_echo "Buildroot dir:             \033[37;1m$BUILD_ROOT_DIR\033[0m "
-my_echo "httpd Dist hostname:       \033[37;1m$HTTPD_DIST_HOSTNAME\033[0m "
-my_echo "httpd Dist directory:      \033[37;1m$HTTPD_DIST_DIR\033[0m "
+my_echo "Buildroot directory:       \033[37;1m$BUILD_ROOT_DIR\033[0m "
+my_echo "Update Server URL:         \033[37;1m$UPDATE_SERVER_URL\033[0m "
+my_echo "Dist directory:            \033[37;1m$DIST_DIR\033[0m "
 my_echo "Configured Machine(s):     \033[37;1m$MACHINE\033[0m "
 my_echo "Project Repository URL:    \033[37;1m$PROJECT_URL\033[0m "
 my_echo "SRCREV Yocto:              \033[37;1m$YOCTO_SRCREV\033[0m "
@@ -268,9 +269,10 @@ fi
 
 ## Configure buildsystem
 # Create included config file from sample file
-if test ! -f $BASEPATH/local.conf.common.inc; then
-	my_echo "\033[37;1mCONFIG:\033[0mCreate $BASEPATH/local.conf.common.inc as include file for local layer configuration ..."
-	do_exec "cp -v $BASEPATH/local.conf.common.inc.sample $BASEPATH/local.conf.common.inc"
+if test ! -f $LOCAL_CONFIG_FILE_INC_PATH; then
+	my_echo "\033[37;1mCONFIG:\033[0mCreate $LOCAL_CONFIG_FILE_INC_PATH as include file for local layer configuration ..."
+	do_exec "cp -v $LOCAL_CONFIG_FILE_INC_PATH.sample $LOCAL_CONFIG_FILE_INC_PATH"
+	do_exec "sed -i -e 's|#UPDATE_SERVER_URL = \"http://@hostname@\"|UPDATE_SERVER_URL = \"${UPDATE_SERVER_URL}\"|' $LOCAL_CONFIG_FILE_INC_PATH"
 fi
 
 # Create configuration for machine
@@ -292,7 +294,7 @@ create_dist_tree;
 my_echo "\033[37;1mLocal setup for package online update.\033[0m"
 my_echo "------------------------------------------------------------------------------------------------"
 my_echo "If you want to use online update for your devices, please configure your webserver and use the"
-my_echo "content of $HTTPD_DIST_DIR"
+my_echo "content of $DIST_DIR"
 my_echo "as destination for your webserver (e.g. apache, nginx, lighttpd or what ever you want)"
 my_echo ""
 

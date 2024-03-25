@@ -270,7 +270,6 @@ function create_local_config () {
 		fi
 
 		# modify or upgrade config files inside conf directory
-		LOCAL_CONFIG_FILE_INC_PATH=$BASEPATH/local.conf.common.inc
 		if test -f $LOCAL_CONFIG_FILE_INC_PATH; then
 
 			if test -f $LOCAL_CONFIG_FILE_PATH; then
@@ -359,7 +358,7 @@ function create_local_config () {
 function create_dist_tree () {
 
 	# create dist dir
-	DIST_BASEDIR="$BASEPATH/dist/$IMAGE_VERSION"
+	DIST_BASEDIR="$DIST_DIR/$IMAGE_VERSION"
 	if test ! -d "$DIST_BASEDIR"; then
 		my_echo -e "\033[37;1mcreate dist directory:\033[0m   $DIST_BASEDIR"
 		do_exec "mkdir -p $DIST_BASEDIR"
