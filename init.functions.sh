@@ -371,7 +371,7 @@ function create_dist_tree () {
 		DEPLOY_DIR="$BUILD_ROOT/$DL/tmp/deploy"
 		do_exec "ln -sf $DEPLOY_DIR $DIST_BASEDIR/$DL"
 		if test -L "$DIST_BASEDIR/$DL/deploy"; then
-			do_exec "unlink -v $DIST_BASEDIR/$DL/deploy"
+			do_exec "unlink $DIST_BASEDIR/$DL/deploy"
 		fi
 	done
 }
