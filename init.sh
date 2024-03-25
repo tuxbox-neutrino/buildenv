@@ -293,7 +293,7 @@ my_echo "\033[37;1mLocal setup for package online update.\033[0m"
 my_echo "------------------------------------------------------------------------------------------------"
 my_echo "If you want to use online update for your devices, please configure your webserver and use the"
 my_echo "content of $HTTPD_DIST_DIR"
-my_echo "as destination for your webserver (e.g. apache, nginx, lighttpd or waht ever you want)"
+my_echo "as destination for your webserver (e.g. apache, nginx, lighttpd or what ever you want)"
 my_echo ""
 
 ## Show results
