@@ -15,7 +15,7 @@ DO_UPDATE=$false
 DO_RESET=$false
 FILES_DIR="$BASEPATH/files"
 HTTPD_DIST_HOSTNAME="localhost"
-HTTPD_DIST_DIR="/var/www/html/dist"
+HTTPD_DIST_DIR="$BASEPATH/dist"
 USER_CALL="$0 $@"
 
 ## Basename of this script
@@ -288,17 +288,13 @@ fi
 ## Create distribution structure
 create_dist_tree;
 
-## check and create distribution directory inside httpd directory for online update
-if test ! -L $HTTPD_DIST_DIR; then
-	my_echo "\033[37;1mLocal setup for package online update.\033[0m"
-	my_echo "------------------------------------------------------------------------------------------------"
-	my_echo "The httpd directory $HTTPD_DIST_DIR doesn't exists."
-	my_echo "If you want to use online update, please configure your webserver and use dist content"
-	my_echo ""
-	my_echo "An easy way is to create a symlink to dist directory:"
-	my_echo ""
-	my_echo "\033[37;1m\tsudo ln -s $BASEPATH/dist $HTTPD_DIST_DIR\033[0m"
-fi
+## Distribution directory inside httpd directory for online update
+my_echo "\033[37;1mLocal setup for package online update.\033[0m"
+my_echo "------------------------------------------------------------------------------------------------"
+my_echo "If you want to use online update for your devices, please configure your webserver and use the"
+my_echo "content of $HTTPD_DIST_DIR"
+my_echo "as destination for your webserver (e.g. apache, nginx, lighttpd or waht ever you want)"
+my_echo ""
 
 ## Show results
 my_echo "\033[32;1m\nSummary:\033[0m"
@@ -319,6 +315,16 @@ my_echo "\033[37;1m\t$BUILD_ROOT/<machine>/bblayer.conf\033[0m"
 my_echo "\033[37;1m\t$BUILD_ROOT/<machine>/local.conf\033[0m"
 
 my_echo ""
+my_echo "\033[37;1mUpdating build evironment and meta-layers\033[0m"
+my_echo "------------------------------------------------------------------------------------------------"
+my_echo ""
+my_echo "\033[37;1m\texecute: $USER_CALL\033[0m \033[32;1m--update\033[0m"
+my_echo ""
+my_echo "------------------------------------------------------------------------------------------------"
+
+my_echo "\033[32;1mDONE!\033[0m"
+
+my_echo ""
 my_echo "\033[37;1mStart build\033[0m"
 my_echo "------------------------------------------------------------------------------------------------"
 my_echo "Now you are ready to build your own images and packages."
@@ -328,19 +334,10 @@ my_echo "\033[37;1m\t$MACHINES\033[0m"
 my_echo ""
 my_echo "Select your favorite machine (or identical) and the next steps are:\033[37;1m"
 my_echo ""
-my_echo "\tcd $BUILD_ROOT_DIR"
-my_echo "\t. ./oe-init-build-env build/<machine>"
+my_echo "\tcd $BUILD_ROOT_DIR && . ./oe-init-build-env build/<machine>"
 my_echo "\tbitbake neutrino-image"
 my_echo "\033[0m"
 
-my_echo ""
-my_echo "\033[37;1mUpdating build evironment and meta-layers\033[0m"
-my_echo "------------------------------------------------------------------------------------------------"
-my_echo ""
-my_echo "\033[37;1m\texecute: $USER_CALL\033[0m \033[32;1m--update\033[0m"
-my_echo ""
-my_echo "------------------------------------------------------------------------------------------------"
-my_echo "For more informations and next steps take a look at the README.md!"
-my_echo "\033[32;1mDONE!\033[0m"
+my_echo "For more information and next steps take a look at the README.md!"
 
 exit 0
