@@ -22,7 +22,7 @@ Dieses Skript dient als Werkzeug zur Vereinfachung der Erstellung einer Umgebung
 		- [4.1.3 Konfiguration zurücksetzen](#413-konfiguration-zurücksetzen)
 	- [4.3 Recipes](#43-recipes)
 	- [4.4 Pakete](#44-pakete)
-		- [4.4.1 Neutrino Quellcode im Workspace bearbeiten (Beispiel)](#441-neutrino-quellcode-im-workspace-bearbeiten-beispiel)
+		- [4.4.1 Quellcode im Workspace bearbeiten (Beispiel)](#441-quellcode-im-workspace-bearbeiten-beispiel)
 - [5. Neubau eines einzelnen Pakets erzwingen](#5-neubau-eines-einzelnen-pakets-erzwingen)
 - [6. Vollständigen Imagebau erzwingen](#6-vollständigen-imagebau-erzwingen)
 - [7. Lizenz](#7-lizenz)
@@ -243,20 +243,24 @@ Wenn Du deine Maschinen-Konfigurationen zurücksetzen möchtest, benenne bitte d
 
 ### 4.3 Recipes
 	
-**Bitte ändere nicht die offiziellen Recipes! Dies wird vom Yocto-Team ausdrücklich nicht empfohlen, sofern man nicht direkt an der Entwicklung beiteiligt ist. Man kann aber zum Vervollständigen, Erweitern oder Überschreiben von Meta-Core-Recipes [.bbappend](https://docs.yoctoproject.org/3.2.4/dev-manual/dev-manual-common-tasks.html#using-bbappend-files-in-your-layer)-Dateien verwenden.**
+**Sofern man nicht direkt an der Entwicklung der Poky-Ebenen beiteiligt ist, ändere nichts an den offiziellen Poky-Ebenen (Meta-Layer)! Dies wird vom Yocto-Projekt ausdrücklich nicht empfohlen, da man Gefahr läuft, bei Aktualisierungen, seine gesamte Arbeit zu verlieren und Inkompatibilitäten oder Konflikte schafft, die nur schwer zu warten sein können. Die übliche Vorgehensweise, um vorhandene offizielle Rezepte zu vervollständigen, zu erweitern oder zu überschreiben, ist die [Verwendung von .bbappend](https://docs.yoctoproject.org/3.2.4/dev-manual/dev-manual-common-tasks.html#using-bbappend-files-in-your-layer)-Dateien.** 
+
+Alternativ, allerdings auch nicht wirklich empfehlenswert, könnte man Kopien von offiziellen Reciepes in seine eigenen Meta-Layer übernehmen und anpassen, da diese dann in der Regel vom Buildsystem bevorzugt werden. In solch einem Fall ist man allerdings selbst dafür verantwortlich, diese Recipes aktuell zu halten, was den Wartungsaufwand allerdings unnötig erhöhen kann. 
+
+Für Rezepte aus den eigenen Meta-Layern wie z.B. meta-neutrino oder den Maschinen-Layern, gilt das prinzipiell genauso. Wer aber [aktiv an den Recipes mitarbeiten](https://docs.yoctoproject.org/current/ref-manual/devtool-reference.html#modifying-an-existing-recipe) möchte, kann dies gerne tun.
 
 ### 4.4 Pakete
 
-Wenn man die volle Kontrolle über einen Paket-Quellcode haben möchte, um z.B. etwas zu fixen oder aktiv zu entwickeln, sollte der Quellcode an dem man arbeiten möchte in den Workspace verschoben werden. Siehe: [Beispiel für Neutrino](#441-neutrino-quellcode-im-workspace-bearbeiten-beispiel)
+Wenn man die volle Kontrolle über einen Paket-Quellcode haben möchte, um z.B. etwas zu fixen oder aktiv zu entwickeln, sollte der Quellcode an dem man arbeiten möchte in den Workspace verschoben werden. Siehe: [Beispiel für Neutrino](#441-quellcode-im-workspace-bearbeiten-beispiel)
 
 Siehe [devtool](https://docs.yoctoproject.org/current/ref-manual/devtool-reference.html) und insbesondere [devtool modify](https://docs.yoctoproject.org/current/ref-manual/devtool-reference.html#modifying-an-existing-recipe). Im Workspace hat man die Garantie, dass der Quellcode nicht vom Buildsystem angefasst wird. Beachtet man das nicht, kann es z.B. vorkommen, dass geänderter Quellcode immer wieder gelöscht oder modifiziert wird. Eigene Anpassungen können daher verloren gehen oder inkompatibel werden. In der lokalen Standardkonfiguration ist [rm_work](https://docs.yoctoproject.org/ref-manual/classes.html#ref-classes-rm-work) aktiviert, was dafür sorgt, dass nach jedem abgeschlossenem Bau eines Pakets, das jeweilige Arbeitsverzeichnis aufgeräumt wird, so dass ausser einigen Logs nichts übrig bleiben wird.
 
-#### 4.4.1 Neutrino Quellcode im Workspace bearbeiten (Beispiel)
+#### 4.4.1 Quellcode im Workspace bearbeiten (Beispiel)
 
-Diese Vorgehensweise trifft im Wesentlichen auf alle anderen Pakete zu.
+Hier wird beispielhaft Neutrino verwendet, aber diese Vorgehensweise trifft im Wesentlichen auf alle anderen Pakete zu.
 
 ```bash
-~/buildenv/poky-3.2.4/build/hd61$ devtool modify neutrino-mp
+~/buildenv/poky-3.2.4/build/hd61$ devtool modify neutrino
 NOTE: Starting bitbake server...54cf81d24c147d888c"
 ...
 workspace            = "3.2.4:13143ea85a1ab7703825c0673128c05845b96cb5"
@@ -266,16 +270,16 @@ Sstate summary: Wanted 0 Found 0 Missed 0 Current 10 (0% match, 100% complete)
 NOTE: Executing Tasks
 NOTE: Tasks Summary: Attempted 83 tasks of which 80 didn't need to be rerun and all succeeded.
 INFO: Adding local source files to srctree...
-INFO: Source tree extracted to /home/<user>/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino-mp
-INFO: Recipe neutrino-mp now set up to build from /home/<user>/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino-mp
+INFO: Source tree extracted to /home/<user>/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino
+INFO: Recipe neutrino-mp now set up to build from /home/<user>/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino
 ```
 
-Unter ```/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino-mp``` befindet sich jetzt der Quellcode für Neutrino. Dort kann man dann daran arbeiten. Das bedeutet, dass das Buildsystem nicht mehr von sich aus vom Remote Git-Repo die Neutrino-Quellen klont, sondern ab jetzt nur noch die lokalen Quellen nutzt, die man selbst verwalten muss. Dabei handelt es sich um ein von devtool angelegtes Git-Repo, in welches man an das Original-Remote-Repository einbinden kann, sofern dies nicht bereits der Fall ist.
+Unter ```/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino``` befindet sich jetzt der Quellcode für Neutrino. Dort kann man dann daran arbeiten. Das bedeutet, dass das Buildsystem nicht mehr von sich aus vom Remote Git-Repo die Neutrino-Quellen klont bzw. automatisch aktalisiert, sondern ab jetzt nur noch die lokalen Quellen innerhalb des Workspace nutzt, die man selbst verwalten muss. Dabei handelt es sich um ein von devtool angelegtes Git-Repo, in welches man an das Original-Remote-Repository einbinden kann, sofern dies nicht bereits der Fall ist.
 
 Führt man jetzt das aus...
 
 ```bash
-bitbake neutrino-mp
+bitbake neutrino
 ```
 
 ...wird Neutrino ab sofort nur noch vom lokalen Repo im Workspace gebaut werden:
@@ -289,7 +293,7 @@ workspace            = "3.2.4:13143ea85a1ab7703825c0673128c05845b96cb5"
 Initialising tasks: 100% |###################################################################################################################################################################################################| Time: 0:00:01
 Sstate summary: Wanted 122 Found 116 Missed 6 Current 818 (95% match, 99% complete)
 NOTE: Executing Tasks
-NOTE: neutrino-mp: compiling from external source tree /home/<user>/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino-mp
+NOTE: neutrino-mp: compiling from external source tree /home/<user>/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino
 NOTE: Tasks Summary: Attempted 2756 tasks of which 2741 didn't need to be rerun and all succeeded.
 ```
 
@@ -301,7 +305,7 @@ devtool modify libstb-hal
 
 ## 5. Neubau eines einzelnen Pakets erzwingen
 
-In einigen Fällen kann es vorkommen, dass ein Target, warum auch immer, abbricht. Man sollte deshalb aber keinesfalls in Panik verfallen und deswegen den Arbeitsordner und den kostbaren sstate-cache löschen. Bereinigungen kann man für jedes Target einzeln vornehmen, ohne ein ansonsten funktionierendes System platt zu machen.
+In einigen Fällen kann es vorkommen, dass ein Target, warum auch immer, abbricht. Man sollte deshalb aber keinesfalls in Panik verfallen und deswegen den Arbeitsordner und den teueren sstate-cache löschen. Bereinigungen kann man für jedes Target einzeln vornehmen, ohne ein ansonsten funktionierendes System platt zu machen.
 
 Insbesondere defekte Archiv-URLs können zum Abbruch führen. Diese Fehler werden aber immer angezeigt und man kann die URL überprüfen. Oft liegt es nur an den Servern und funktionieren nach wenigen Minuten sogar wieder.
 
@@ -342,21 +346,6 @@ Wenn man den Cache **nicht** gelöscht hat, sollte das Image in relativ kurzer Z
 	
 Dieses Verzeichnis ist ziemlich wertvoll und nur in seltenen Fällen ist es notwendig, dieses Verzeichnis zu löschen. Bitte beachte, dass der Build nach dem Löschen des Cache sehr viel mehr Zeit in Anspruch nimmt. 
 
-**Hinweis:** Man kann Bitbake anweisen, keinen Cache zu verwenden.
-
-```bash
-bitbake --no-setscene neutrino-image
-```
-
-Damit wird beim Bauen kein Cache angelegt.
-
-oder
-
-```bash
-bitbake --skip-setscene neutrino-image
-```
-
-Damit wird ein bereits vorhandener Cache nicht verwendet.
 
 ## 7. Lizenz
 
