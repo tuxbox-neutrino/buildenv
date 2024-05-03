@@ -242,14 +242,11 @@ DISTRO_TYPE = "beta"
 #   where do find the buildsystem the distro type file (beta.txt, release.txt ...), this file contains list of image urls for download
 #RELEASE_TEXT_LOCATION_FILE = "${DEPLOY_DIR_IMAGE}/${DISTRO_TYPE}.txt"
 
-### Server URL which contains update and packages. 
+### Server URL which contains update and packages, must contain the content of the deployed images and packages
 #   Web server must be running and html content must point to the toplevel directory which contains the deployed images
 #   NOTE: @hostname@ is only a placeholder and will be replaced with current hostname of your build host automatically. @hostname@ could be the current host IP too. 
 #   or any other domain.tld. If required, replace @hostname@ with the host IP or Domain.
 #UPDATE_SERVER_URL = "http://@hostname@"
-
-##  URL to the dist directory, must contain the content of the deployed images and packages
-#DIST_URL = "${UPDATE_SERVER_URL}/dist"
 
 ##  URL to the images, must contain the content of the image dir and its a sub dir to specific machine build and image dir which contains machine images
 #IMAGE_LOCATION_URL = "${DIST_URL}/${DISTRO_VERSION}/${MACHINE}/images/${MACHINE}"
