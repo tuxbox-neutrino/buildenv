@@ -84,34 +84,32 @@ Nach [Schritt 1.4](#14-init-skript-ausführen) sollte etwa diese Struktur angele
 
 ```
 .buildenv
- ├── dist                          <-- Freigabeordner
- │   └── {DISTRO_VERSION}          <-- hier liegen die erzeugten Images und Pakete (Symlinks zu den Deploy-Verzeichnissen innerhalb der Arbeitsverzeichnisse)
+ ├── dist                          <-- Freigabeordner für http-Server (falls eingerichtet) http://localhost, http://localhost:8080 , benötigt für IPK-Feeds und Images
+ │   └── {DISTRO_VERSION}          <-- hier liegen die erzeugten Images und Pakete (Symlinks zeigen auf die Deploy-Verzeichnisse innerhalb der Build-Unterverzeichnisse)
  :
- ├── init                          <-- init-Script
+ ├── init.sh                       <-- init-Script
  ├── local.conf.common.inc         <-- globale Benutzerkonfiguration, ist in die benutzerdefinierte Konfiguration inkluiert
  :
- ├── log                           <-- Ordner für Logs
+ ├── log                           <-- Ordner für Logs, enthält Logs für jede Ausführung des Init-Scripts
  :
- └── poky-{DISTRO_VERSION}         <-- Nach Punkt 1.4 befindest Du dich hier.
+ └── poky-{DISTRO_VERSION}         <-- Nach Schritt 1.4 befindest Du dich hier. Hier befindet sich der Buildsystem-Kern und die Meta-Layer
      │
-	 :
-     ├── <Buildsystem-Kern und Meta-Layer>
      :
-     └── build                     <-- Hier liegen die Buildverzeichnisse, nach Schritt 2.2 bist Du in einem der Build-Unterverzeichnisse
-         ├── <machine 1>           <-- Buildverzeichnis für Maschinentyp
+     └── build                     <-- Hier liegen die Build-Unterverzeichnisse, nach Schritt 2.2 befindest Du dich in einem dieser Build-Unterverzeichnisse
+         ├── <machine x>           <-- Build-Unterverzeichnis für Maschinentyp x
          │   ├── conf              <-- Ordner für Layer und benutzerdefinierte Konfiguration
          │   │   └── bblayers.conf <-- Konfigurationsdatei für eingebundene Meta-Layer
          │   │   └── local.conf    <-- benutzerdefinierte Konfiguration für einen Maschinentyp
 		 │   :
-         │   ├── (tmp)             <-- Arbeitsverzeichnis, wird erst beim Bauen angelegt
+         │   ├── (tmp)             <-- Arbeitsverzeichnis, wird beim Bauen automatisch angelegt
          │   └── (workspace)       <-- Workspace, wird beim Ausführen von devtool angelegt
          :
-         └── <machine x>
+         └── <machine y>           <-- weiteres Build-Unterverzeichnis für Maschinentyp y
 ```
  
 ## 2. Image bauen
 
-Stelle sicher, dass Du dich wie im [Schema](#14) gezeigt hier befindest:
+Stelle sicher, dass Du dich wie im [Schema](#15-struktur-der-buildumgebung) gezeigt hier befindest:
 
 ```
 poky-{DISTRO_VERSION}
@@ -127,13 +125,13 @@ ls  build
 
 ### 2.2 Starte Umgebungsskript
 
-Führe das Umgebungsskript für die aus der Liste gewünschte Box einmalig aus! Du gelangst dann automatisch in das passende Buildverzeichnis.
+Führe das Umgebungsskript für die aus der Liste gewünschte Box einmalig aus! Du gelangst dann automatisch in das passende Build-Unterverzeichnis.
 
 ```bash
 . ./oe-init-build-env build/<machine>
 ```
 
-Solange man sich ab jetzt mit der erzeugten Umgebung innerhalb der geöffneten Shell im gewünschten Buildverzeichnis befindet, muss man dieses Script nicht noch einmal ausführen und kannst [Schritt 2.3 ](#23-image-erstellen) Images oder beliebige Pakete bauen.
+Solange man sich ab jetzt mit der erzeugten Umgebung innerhalb der geöffneten Shell im gewünschten Build-Unterverzeichnis befindet, muss man dieses Script nicht noch einmal ausführen und kannst [Schritt 2.3 ](#23-image-erstellen) Images oder beliebige Pakete bauen.
 
 **Hinweis:** Du kannst auch weitere Shells und damit Buildumgebungen für weitere Boxtypen parallel dazu anlegen und je nach Bedarf auf das entsprechende Terminal wechseln und auch parallel bauen lassen, sofern es dein System hergibt.
 
@@ -157,7 +155,7 @@ Wenn alles erledigt ist, sollte eine ähnliche Meldung wie diese erscheinen:
 Ergebnisse findest Du unter:
 
 ```bash
-buildenv/poky-3.2.4/build/<machine>/tmp/deploy
+buildenv/poky-{DISTRO_VERSION}/build/<machine>/tmp/deploy
 ```
 
 oder im Freigabe-Verzeichnis:
@@ -169,7 +167,7 @@ buildenv/dist/<Image-Version>/<machine>/
 Falls ein Webserver eingerichtet ist, der auf das Freigabe-Verzeichnis zeigt:
 
 ```bash
-http://localhost/3.2.4
+http://localhost/{DISTRO_VERSION} oder mit Portnummer http://localhost:8080/{DISTRO_VERSION}
 ```
 
 ## 3. Aktualisierung
@@ -309,7 +307,7 @@ In einigen Fällen kann es vorkommen, dass ein Target, warum auch immer, abbrich
 
 Insbesondere defekte Archiv-URLs können zum Abbruch führen. Diese Fehler werden aber immer angezeigt und man kann die URL überprüfen. Oft liegt es nur an den Servern und funktionieren nach wenigen Minuten sogar wieder.
 
-Um sicherzustellen, ob das betreffende Recipe auch tatsächlich ein Problem hat, macht es Sinn das betreffende Target komplett zu bereinigen und neu zu bauen. Um dies zu erzwingen, müssen alle zugehörigen Paket-, Build- und Cachedaten bereinigt werden.
+Um sicherzustellen, ob das betreffende Recipe auch tatsächlich ein Problem hat, macht es Sinn das betreffende Target komplett zu bereinigen und neu zu bauen. Um dies zu erreichen, müssen alle zugehörigen Paket-, Build- und Cachedaten bereinigt werden.
 
 ```bash
 bitbake -c cleansstate <target>
@@ -330,7 +328,7 @@ Das Init-Skript stellt dafür die Option `--reset` zur Verfügung.
 # Anweisungen befolgen
 ```
 
-Manuell erreichst Du das ebenfalls, indem man das tmp-Verzeichnis im jeweiligem Buildverzeichnis manuell umbenennt. Löschen kann man es nachträglich, wenn man Speicherplatz freigeben will oder sich sicher ist, dass man das Verzeichnis nicht mehr braucht:
+Manuell erreichst Du das ebenfalls, indem man das tmp-Verzeichnis im jeweiligem Build-Unterverzeichnis manuell umbenennt. Löschen kann man es nachträglich, wenn man Speicherplatz freigeben will oder sich sicher ist, dass man das Verzeichnis nicht mehr braucht:
 
 ```bash
 mv tmp tmp.01
@@ -344,7 +342,7 @@ bitbake neutrino-image
 
 Wenn man den Cache **nicht** gelöscht hat, sollte das Image in relativ kurzer Zeit fertig gebaut sein. Gerade deshalb wird empfohlen, den Cache beizubehalten. Das Verzeichnis wo sich der Cache befindet, wird über die Variable ```${SSTATE_DIR}``` festgelegt und kann in der Konfiguration angepasst werden. 
 	
-Dieses Verzeichnis ist ziemlich wertvoll und nur in seltenen Fällen ist es notwendig, dieses Verzeichnis zu löschen. Bitte beachte, dass der Build nach dem Löschen des Cache sehr viel mehr Zeit in Anspruch nimmt. 
+Dieses Verzeichnis ist ziemlich wertvoll und nur in seltenen Fällen ist es notwendig, dieses Verzeichnis zu löschen. Bitte beachte, dass der Buildvorgang nach dem Löschen des Cache sehr viel mehr Zeit in Anspruch nimmt. 
 
 
 ## 7. Lizenz
