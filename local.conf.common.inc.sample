@@ -309,6 +309,7 @@ SHOUTCAST_DEV_KEY = ""
 #   The WEATHER_DEV_KEY variable is not longer used for darksky keys
 #   Currently used provider is: openweather map
 WEATHER_DEV_KEY = ""
+WEATHER_API_VERSION = "3.0"
 #   NOTE: YouTube functionality of Neutrino was completely removed in 2022, this key has no effects anymore, but YouTube is usable further with plugins. 
 YT_DEV_KEY = ""
 
@@ -319,13 +320,21 @@ YT_DEV_KEY = ""
 #   NOTE! --enable-testing Works only with FLAVOUR = "tuxbox".
 #   If you want to use a different FLAVOUR than 'tuxbox', keep these lines uncommented and
 #   add them to your local.conf within your build directory.
-#EXTRA_OECONF_append_pn-neutrino-mp += " \
+#EXTRA_OECONF_append_pn-neutrino += " \
 #		--enable-testing \
 #"
 ## Uncomment these lines to disable debug mode for Neutrino.
-#EXTRA_OECONF_append_pn-neutrino-mp += " \
+#EXTRA_OECONF_append_pn-neutrino += " \
 #		--without-debug \
 #"
+## Uncomment these lines to enable API-management via Neutrino.
+# EXTRA_OECONF_append_pn-neutrino += " \
+#		--enable-tmdb-key-manage \
+#		--enable-omdb-key-manage \
+#		--enable-youtube-key-manage \
+#		--enable-shoutcast-id-manage \
+#		--enable-weather-key-manage \
+# "
 
 ### Extra build config options for gdb build
 #EXTRA_OECONF_append_pn-gdb = "--with-system-gdbinit=/etc/gdbinit"
