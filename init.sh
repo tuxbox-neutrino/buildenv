@@ -2,8 +2,10 @@
 source init.functions.sh
 #set -x
 
-## Comatible image version
-IMAGE_VERSION="3.2.4"
+## Comatible and default image version
+DEFAULT_IMAGE_VERSION="3.2.4"
+COMPATIBLE_IMAGE_VERSIONS="$DEFAULT_IMAGE_VERSION 3.2"
+IMAGE_VERSION="$DEFAULT_IMAGE_VERSION"
 
 ## global vars
 BASEPATH=$(pwd)
@@ -37,19 +39,10 @@ ln -sf $LOGFILE $LOGFILE_LINK
 my_echo "true" "$USER_CALL"
 
 ## Current build env script version
-VERSION=$(git -C $BASEPATH describe --tags 2>/dev/null)
-if [ -z "$VERSION" ]; then
-	VERSION="$IMAGE_VERSION"
+BUILD_ENV_VERSION=$(git -C $BASEPATH describe --tags 2>/dev/null)
+if [ -z "$BUILD_ENV_VERSION" ]; then
+	BUILD_ENV_VERSION="unknown"
 fi
-INIT_VERSION="$NAME $VERSION"
-
-## Preset required branches and revs
-COMPATIBLE_BRANCH="gatesgarth"
-COMPATIBLE_TAG="$IMAGE_VERSION"
-YOCTO_SRCREV="bc71ec0"
-PYTHON2_SRCREV="27d2aeb"
-OE_SRCREV="f3f7a5f"
-
 
 ## Machines
 # Identical listings
@@ -80,20 +73,6 @@ BACKUP_PATH=$BASEPATH/backups
 mkdir -p $BACKUP_PATH
 BACKUP_SUFFIX=bak
 
-## Layer sources
-YOCTO_GIT_URL="https://git.yoctoproject.org/git/poky"
-POKY="poky"
-POKY_NAME="$IMAGE_VERSION"
-BUILD_ROOT_DIR="$BASEPATH/$POKY-$IMAGE_VERSION"
-BUILD_ROOT="$BUILD_ROOT_DIR/build"
-
-OE_LAYER_NAME=meta-openembedded
-OE_LAYER_GIT_URL=https://git.openembedded.org/meta-openembedded
-OE_LAYER_PATCH_LIST="0001-openembedded-disable-meta-python.patch 0002-openembedded-disable-openembedded-layer-meta-phyton.patch"
-
-OE_CORE_LAYER_NAME=openembedded-core
-OE_CORE_LAYER_GIT_URL=https://github.com/openembedded/openembedded-core.git
-
 # meta-neutrino project URL:
 PROJECT_URL="https://github.com/tuxbox-neutrino"
 
@@ -115,16 +94,17 @@ show_help() {
     echo "      --dist-dir            Directory where to find the deployed images and packages, default: $DIST_DIR"
     echo "  -p, --project-url         Project-URL where to find project meta layers,"
     echo "                            e.g. for read and write access: git@github.com:tuxbox-neutrino, default = $PROJECT_URL"
+    echo "      --image-version       Sets the required image version to build, possible versions are: $COMPATIBLE_IMAGE_VERSIONS, default = $DEFAULT_IMAGE_VERSION"
     echo "  -u, --update              Update your project meta layers"
     echo "  -r, --reset               Resets the tmp dir within the build directory, $BASEPATH/poky-x.x.x/build/<machine>/tmp. The /tmp directory will be not deleted but renamed"
     echo "  -i, --id-rsa-file         Path to your preferred id rsa file, default: users id rsa file, e.g. $HOME/.ssh/id_rsa"
     echo ""
     echo "  -h, --help                Show this help"
-    echo "      --version             Show version information"
+    echo "      --version             Show version information for buildenv script"
 }
 
 ## Processing command line arguments
-TEMP=$(getopt -o rup:m:i:h --long reset,update-url:,dist-dir:,update,project-url:,machine:,id-rsa-file,help,version -n 'init' -- "$@")
+TEMP=$(getopt -o rup:m:i:h --long reset,update-url:,dist-dir:,update,project-url:,machine:,id-rsa-file,image-version:,help,version -n 'init' -- "$@")
 if [ $? != 0 ] ; then
 	my_echo "Error while process arguments" >&2
 	show_help
@@ -151,16 +131,54 @@ while true ; do
 			DO_UPDATE="$true"; shift ;;
 		-r|--reset)
 			DO_RESET="$true"; shift ;;
+          --image-version)
+            IMAGE_VERSION="$2"; shift 2 ;;
         -h|--help)
             show_help
             exit 0 ;;
 		  --version)
-		    echo "$INIT_VERSION"
+		    echo "$BUILD_ENV_VERSION"
 		    exit 0 ;;
         --) shift ; break ;;
         *) echo "Internal Error!" ; exit 1 ;;
     esac
 done
+
+## Validate the chosen image version
+if [[ ! " $COMPATIBLE_IMAGE_VERSIONS " =~ " $IMAGE_VERSION " ]]; then
+    my_echo "\033[31;1mError: Invalid image version specified '$IMAGE_VERSION'. Available versions are: [$COMPATIBLE_IMAGE_VERSIONS]\033[0m"
+    exit 1
+fi
+
+## Layer sources
+YOCTO_GIT_URL="https://git.yoctoproject.org/git/poky"
+POKY="poky"
+POKY_NAME="$IMAGE_VERSION" #TODO
+BUILD_ROOT_DIR="$BASEPATH/$POKY-$IMAGE_VERSION"
+BUILD_ROOT="$BUILD_ROOT_DIR/build"
+
+OE_LAYER_NAME=meta-openembedded
+OE_LAYER_GIT_URL=https://git.openembedded.org/meta-openembedded
+OE_LAYER_PATCH_LIST=""
+
+OE_CORE_LAYER_NAME=openembedded-core
+OE_CORE_LAYER_GIT_URL=https://github.com/openembedded/openembedded-core.git
+
+## Preset required branches and revs based on the selected image version
+case "$IMAGE_VERSION" in
+    "3.2"|"3.2.4")
+        COMPATIBLE_TAG="$IMAGE_VERSION"
+        COMPATIBLE_BRANCH="gatesgarth"
+        YOCTO_SRCREV="bc71ec0"
+        PYTHON2_SRCREV="27d2aeb"
+        OE_SRCREV="f3f7a5f"
+		OE_LAYER_PATCH_LIST="0001-openembedded-disable-meta-python.patch 0002-openembedded-disable-openembedded-layer-meta-phyton.patch"
+        ;;
+    *)
+        my_echo "\033[31;1mError: No valid configuration for the specified image version '$IMAGE_VERSION'.\033[0m"
+        exit 1
+        ;;
+esac
 
 # Check machine type
 if [ $(is_valid_machine "$MACHINE") == false ]; then
@@ -170,7 +188,7 @@ if [ $(is_valid_machine "$MACHINE") == false ]; then
 fi
 
 my_echo "------------------------------------------------------------------------------------------"
-my_echo "Buildenv Version:          \033[37;1m$INIT_VERSION\033[0m "
+my_echo "Buildenv Version:          \033[37;1m$BUILD_ENV_VERSION\033[0m "
 my_echo "Image Version:             \033[37;1m$IMAGE_VERSION\033[0m "
 my_echo "Compatible OE-branch:      \033[37;1m$COMPATIBLE_BRANCH\033[0m "
 my_echo "Buildroot directory:       \033[37;1m$BUILD_ROOT_DIR\033[0m "
@@ -200,10 +218,12 @@ fetch_meta "" $COMPATIBLE_BRANCH $OE_LAYER_GIT_URL $OE_SRCREV $BUILD_ROOT_DIR/$O
 fetch_meta "" master $OE_CORE_LAYER_GIT_URL "" $BUILD_ROOT_DIR/$OE_CORE_LAYER_NAME
 
 # fetch required branch for meta-python2
-PYTHON2_LAYER_NAME=meta-python2
-PYTHON2_LAYER_GIT_URL=https://git.openembedded.org/$PYTHON2_LAYER_NAME
-PYTHON2_PATCH_LIST="0001-local_conf_outcomment_line_15.patch"
-fetch_meta "" $COMPATIBLE_BRANCH $PYTHON2_LAYER_GIT_URL $PYTHON2_SRCREV $BUILD_ROOT_DIR/$PYTHON2_LAYER_NAME "$PYTHON2_PATCH_LIST"
+if [[ -n "$PYTHON2_SRCREV" ]]; then
+	PYTHON2_LAYER_NAME=meta-python2
+	PYTHON2_LAYER_GIT_URL=https://git.openembedded.org/$PYTHON2_LAYER_NAME
+	PYTHON2_PATCH_LIST="0001-local_conf_outcomment_line_15.patch"
+	fetch_meta "" $COMPATIBLE_BRANCH $PYTHON2_LAYER_GIT_URL $PYTHON2_SRCREV $BUILD_ROOT_DIR/$PYTHON2_LAYER_NAME "$PYTHON2_PATCH_LIST"
+fi
 
 # fetch required branch for meta-qt5
 QT5_LAYER_NAME=meta-qt5

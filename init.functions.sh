@@ -345,6 +345,9 @@ function create_local_config () {
 
 		# add layer entries into bblayer.conf
 		set_file_entry $BBLAYER_CONF_FILE "generated" '# auto generated entries by init script'
+		if [[ -z "$PYTHON2_SRCREV" ]]; then
+			PYTHON2_LAYER_NAME=""
+		fi
 		LAYER_LIST=" $TUXBOX_LAYER_NAME $META_MACHINE_LAYER $OE_LAYER_NAME/meta-oe $OE_LAYER_NAME/meta-networking $PYTHON2_LAYER_NAME $QT5_LAYER_NAME "
 		for LL in $LAYER_LIST ; do
 			if set_file_entry $BBLAYER_CONF_FILE $LL 'BBLAYERS += " '$BUILD_ROOT_DIR'/'$LL' "' == 1;then
