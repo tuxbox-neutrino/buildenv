@@ -30,11 +30,11 @@ Dieses Skript dient als Werkzeug zur Vereinfachung der Erstellung einer Umgebung
 
 ## 1. Vorbereitung
 
+Empfohlen sei an dieser Stelle, den dafür vorgesehenen Docker-Container zu verwenden, da damit schon wesentliche Schritte erledigt sind, um mit möglichst wenig Anpassungen an seinem System, loslegen zu können. [siehe docker-buildenv](https://github.com/tuxbox-neutrino/docker-buildenv). In diesem Fall kann man gleich [mit der Initialisierung](#14-init-skript-ausführen) beginnen.
+
+**HINWEIS:** [docker-buildenv](https://github.com/tuxbox-neutrino/docker-buildenv) löst die [Tuxbox-Builder](https://sourceforge.net/projects/n4k/files/Tuxbox-Builder)-VM komplett ab. Deren Wartung wird nicht mehr weitergeführt. 
+
 Hier angegebene Pfade basieren auf Vorgaben, die vom Init-Script erzeugt werden. Einige Einträge werden als ```<Platzhalter>``` dargestellt, die lokal angepasst werden müssen. [Siehe Schema](#14-init-skript-ausführen)
-
-**HINWEIS:** Die Wartung der Tuxbox-Builder-VM wird nicht mehr weitergeführt. Falls die VM-Lösung trotzdem verwendet werden soll, springe bitte zu [Schritt 2](#2-image-bauen). Die Tuxbox-Builder-VM enthält normalerweise bereits erforderliche Pakete.
-
-Details und Download: [Tuxbox-Builder](https://sourceforge.net/projects/n4k/files/Tuxbox-Builder)
 
 ### 1.1 Erforderliche Host-Pakete installieren
 
