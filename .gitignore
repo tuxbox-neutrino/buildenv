@@ -20,4 +20,6 @@ poky-*
 
 venv
 tagit*
+translate*
+template*
 
