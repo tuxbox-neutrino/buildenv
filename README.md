@@ -1,7 +1,9 @@
+# Documentation
 
-## Localized `README.md`'s
+This document is available in the following languages:
 
-| Language                   |
-| -------------------------- |
-| [English](README-en.md)    |
-| [German](README-de.md)     |
+<!-- LANGUAGE_LINKS_START -->
+[🇩🇪 German](README_de.md) | [🇬🇧 English](README_en.md) | [🇪🇸 Spanish](README_es.md) | [🇫🇷 French](README_fr.md) | [🇮🇹 Italian](README_it.md)
+<!-- LANGUAGE_LINKS_END -->
+
+Please choose your preferred language by clicking on the links above.
