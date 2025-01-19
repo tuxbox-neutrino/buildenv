@@ -1,0 +1,84 @@
+name: Translate README
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'README_de.md'
+      - 'init.sh'
+      - 'config/config-sample.php'
+      - 'privacy.php'
+
+permissions:
+  contents: write
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.x
+
+    - name: Install translate dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade googletrans==3.1.0a0
+        curl -o translate-md.py https://raw.githubusercontent.com/dbt1/translate-md/refs/heads/master/translate-md.py
+        chmod 755 translate-md.py
+        curl -o translate-md-config.json https://raw.githubusercontent.com/dbt1/translate-md/refs/heads/master/translate-md-config.json.sample
+
+    - name: Prepare Git user data
+      run: |
+        git config --global user.email "dbt@novatux.de"
+        git config --global user.name "Thilo Graf"
+
+    - name: Verify translate-md.py download
+      run: |
+        if [ ! -f translate-md.py ]; then
+         echo "translate-md.py was not downloaded!"
+         exit 1
+        fi
+
+    - name: Translate README
+      run: |
+        cp README_de.md template.md
+        python translate-md.py --template-md template.md --output-dir . --prefix README_ --main-doc README.md -c translate-md-config.json -s de
+        rm template.md
+
+    - name: Commit and push translated README
+      run: |
+        git add README*.md
+        git commit -m "readme: Automatically translated README"
+        git push
+
+    - name: Install tagit dependencies
+      run: |
+        pip install GitPython
+        curl -o tagit.py https://raw.githubusercontent.com/dbt1/tagit/master/tagit.py
+        curl -o tagit-config.json https://raw.githubusercontent.com/dbt1/tagit/master/tagit-config.json
+        chmod +x tagit.py
+
+    - name: Verify tagit.py download
+      run: |
+        if [ ! -f tagit.py ]; then
+         echo "tagit.py was not downloaded!"
+         exit 1
+        fi
+
+    - name: Tagging
+      run: |
+        python tagit.py -f README_de.md -f README_en.md -f README_es.md -f README_fr.md -f README_it.md --scheme-file tagit-config.json
+
+    - name: Commit and push version and tag changes
+      run: |
+        git add -A
+        git commit -m "Automatically updated tags [skip ci]" || echo "No changes to commit"
+        git push
+        git push --tags
