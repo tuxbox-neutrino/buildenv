@@ -152,7 +152,7 @@ fi
 
 ## Layer sources
 YOCTO_GIT_URL="https://git.yoctoproject.org/git/poky"
-POKY="poky"
+POKY="$(basename $YOCTO_GIT_URL)"
 POKY_NAME="$IMAGE_VERSION" #TODO
 BUILD_ROOT_DIR="$BASEPATH/$POKY-$IMAGE_VERSION"
 BUILD_ROOT="$BUILD_ROOT_DIR/build"
