@@ -5,10 +5,12 @@ on:
     branches:
       - master
     paths:
+      - 'README.md'
       - 'README_de.md'
       - 'init.sh'
-      - 'config/config-sample.php'
-      - 'privacy.php'
+      - 'init.functions.sh'
+      - 'files/**'
+      - 'local.conf.common.inc.sample'
 
 permissions:
   contents: write
