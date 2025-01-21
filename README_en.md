@@ -335,7 +335,10 @@ If you have **not** cleared the cache, the image should be built in a relatively
 This directory is quite valuable and only in rare cases is it necessary to delete this directory. Please note that the build process will take much longer after clearing the cache.
 ## 7. License
 
-WITH License
+```
+MIT License
+```
+
 ## 8. Further information
 
 Further information about the Yocto build system:
