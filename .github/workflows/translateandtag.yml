@@ -58,7 +58,6 @@ jobs:
       run: |
         git add README*.md
         git commit -m "readme: Automatically translated README"
-        git push
 
     - name: Install tagit dependencies
       run: |
