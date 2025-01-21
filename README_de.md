@@ -1,10 +1,10 @@
 <!-- LANGUAGE_LINKS_START -->
-<span style="color: grey;">🇩🇪 German</span> | [🇬🇧 English](README_en.md) | [🇪🇸 Spanish](README_es.md) | [🇫🇷 French](README_fr.md) | [🇮🇹 Italian](README_it.md)
+<span style="color: grey;">🇩🇪 German</span> | [🇬🇧 English](README_en.md)
 <!-- LANGUAGE_LINKS_END -->
 
 Dieses Skript dient als Werkzeug zur Vereinfachung der Erstellung einer Umgebung für Entwicklung und des Build-Prozesses für Images die mit Neutrino als Benutzeroberfläche auf unterschiedlichen Hardware-Plattformen laufen. Es automatisiert einige Schritte, die für die Einrichtung einer konsistenten und funktionalen Entwicklungs- und Build-Umgebung erforderlich sind, indem es die notwendigen Abhängigkeiten und grundlegende Konfigurationen sowie Meta-Layer  voreinrichtet und benutzerdefinierte Einstellungen ermöglicht. Das Skript zielt darauf ab, eine Grundlage zu bieten, auf der man aufbauen und experimentieren kann, um eigene angepasste Versionen von Tuxbox-Neutrino Images zu erstellen, zu aktualisieren und zu pflegen.
 
-[![Version](https://img.shields.io/badge/version-0.5.10-blue.svg)](https://github.com/dbt1/tuxbox-explorer)
+[![Version](https://img.shields.io/badge/version-0.5.7-blue.svg)](https://github.com/tuxbox-neutrino/buildenv)
 
 - [1. Vorbereitung](#1-vorbereitung)
 	- [1.1 Erforderliche Host-Pakete installieren](#11-erforderliche-host-pakete-installieren)
@@ -63,8 +63,6 @@ chrpath socat cpio python3 python3-pip python3-pexpect xz-utils debianutils iput
 python3-git python3-jinja2 libegl1-mesa pylint3 xterm subversion locales-all libxml2-utils \
 ninja-build default-jre clisp libcapstone4 libsdl2-dev doxygen
 ```
-
-**HINWEIS:** Bei Debian 10 (buster) libcapstone3 verwenden.
 
 #### 1.1.1 Empfohlene Zusatzpakete zur grafischen Unterstützung und Analyse
 
@@ -342,8 +340,7 @@ Das Init-Skript stellt dafür die Option `--reset` zur Verfügung.
 
 ```bash
 ./init --reset
-# Anweisungen befolgen
-
+# Follow instructions
 ```
 
 Manuell erreichst Du das ebenfalls, indem man das tmp-Verzeichnis im jeweiligem Build-Unterverzeichnis manuell umbenennt. Löschen kann man es nachträglich, wenn man Speicherplatz freigeben will oder sich sicher ist, dass man das Verzeichnis nicht mehr braucht:
@@ -364,7 +361,9 @@ Dieses Verzeichnis ist ziemlich wertvoll und nur in seltenen Fällen ist es notw
 
 ## 7. Lizenz
 
+```
 MIT License
+```
 
 ## 8. Weiterführende Informationen
 
