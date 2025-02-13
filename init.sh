@@ -274,7 +274,7 @@ HISI_LAYER_NAME=meta-hisilicon  #TODO: move into gfutures
 HISI_LAYER_BRANCH="master"
 HISI_LAYER_SRCREV="e85e1781704d96f5dfa0c554cf81d24c147d888c"
 HISI_LAYER_GIT_URL="$PROJECT_URL/$HISI_LAYER_NAME.git"
-if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_HISI '") == true; then
+if [ "$MACHINE" == "all" ] || [ $(is_required_machine_layer "' $MACHINES_HISI '") == true ]; then
 	fetch_meta "" $HISI_LAYER_BRANCH $HISI_LAYER_GIT_URL "$HISI_LAYER_SRCREV" $BUILD_ROOT_DIR/$HISI_LAYER_NAME
 fi
 
