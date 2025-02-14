@@ -87,6 +87,41 @@ function get_metaname() {
     echo "$META_NAME"
 }
 
+## Function to apply a patch using git apply with check and commit
+# Parameters:
+#   $1: target_git_path (Path to the Git repository)
+#   $2: patch_file (Name of the patch file located in $FILES_DIR)
+#   $3: layer_name (Name of the layer, only for log output)
+function apply_patch() {
+    local target_git_path="$1"
+    local patch_file="$2"
+    local layer_name="$3"
+
+    my_echo -e "Applying patch: $patch_file"
+
+    # Check if the patch has already been applied by testing it in reverse
+    if git -C "$target_git_path" apply --reverse --check "$FILES_DIR/$patch_file" > /dev/null 2>&1; then
+        my_echo -e "\033[33;1mPatch $patch_file already applied to $layer_name; skipping.\033[0m"
+        return 0
+    fi
+
+    # Check if the patch can be applied cleanly
+    if do_exec "git -C \"$target_git_path\" apply --check \"$FILES_DIR/$patch_file\""; then
+        if do_exec "git -C \"$target_git_path\" apply \"$FILES_DIR/$patch_file\""; then
+            # After successfully applying the patch: add changes and commit
+            do_exec "git -C \"$target_git_path\" add -A"
+            do_exec "git -C \"$target_git_path\" commit -m \"Apply patch $patch_file\""
+        else
+            my_echo -e "\033[31;1mFailed to apply patch $patch_file to $layer_name using git apply\033[0m"
+            return 1
+        fi
+    else
+        my_echo -e "\033[33;1mSkipping patch $patch_file: cannot be applied cleanly.\033[0m"
+    fi
+
+    return 0
+}
+
 ## Clone or update required branch for a meta-layer
 function fetch_meta() {
     local layer_name="$1"
@@ -115,14 +150,8 @@ function fetch_meta() {
         ## Patching
         if [[ -n "$patch_list" ]]; then
             for patch_file in $patch_list; do
-                my_echo -e "Applying patch: $patch_file"
-                if do_exec "git -C \"$target_git_path\" apply --check \"$FILES_DIR/$patch_file\""; then
-                    if ! do_exec "git -C \"$target_git_path\" am < \"$FILES_DIR/$patch_file\""; then
-                        my_echo -e "\033[31;1mFailed to apply patch $patch_file to $layer_name\033[0m"
-                        return 1
-                    fi
-                else
-                    my_echo -e "\033[33;1mSkipping patch $patch_file already applied or cannot be applied cleanly.\033[0m"
+                if ! apply_patch "$target_git_path" "$patch_file" "$layer_name"; then
+                    return 1
                 fi
             done
         fi
@@ -136,6 +165,14 @@ function fetch_meta() {
             fi
             do_exec "git -C \"$target_git_path\" checkout \"$branch_name\"" || do_exec "git -C \"$target_git_path\" checkout -b \"$branch_name\""
             do_exec "git -C \"$target_git_path\" pull -r origin \"$branch_name\""
+            ## Patching
+            if [[ -n "$patch_list" ]]; then
+                for patch_file in $patch_list; do
+                    if ! apply_patch "$target_git_path" "$patch_file" "$layer_name"; then
+                        return 1
+                    fi
+                done
+            fi
             if [[ "$stash_applied" == true ]]; then
                 if do_exec "git -C \"$target_git_path\" stash pop"; then
                     my_echo -e "Stash applied successfully."
