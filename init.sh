@@ -151,7 +151,7 @@ if [[ ! " $COMPATIBLE_IMAGE_VERSIONS " =~ " $IMAGE_VERSION " ]]; then
 fi
 
 ## Layer sources
-YOCTO_GIT_URL="https://git.yoctoproject.org/git/poky"
+YOCTO_GIT_URL="https://github.com/yoctoproject/poky.git"
 POKY="$(basename $YOCTO_GIT_URL)"
 POKY_NAME="$IMAGE_VERSION" #TODO
 BUILD_ROOT_DIR="$BASEPATH/$POKY-$IMAGE_VERSION"
