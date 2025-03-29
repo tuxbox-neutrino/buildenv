@@ -4,7 +4,7 @@
 
 Dieses Skript dient als Werkzeug zur Vereinfachung der Erstellung einer Umgebung für Entwicklung und des Build-Prozesses für Images die mit Neutrino als Benutzeroberfläche auf unterschiedlichen Hardware-Plattformen laufen. Es automatisiert einige Schritte, die für die Einrichtung einer konsistenten und funktionalen Entwicklungs- und Build-Umgebung erforderlich sind, indem es die notwendigen Abhängigkeiten und grundlegende Konfigurationen sowie Meta-Layer  voreinrichtet und benutzerdefinierte Einstellungen ermöglicht. Das Skript zielt darauf ab, eine Grundlage zu bieten, auf der man aufbauen und experimentieren kann, um eigene angepasste Versionen von Tuxbox-Neutrino Images zu erstellen, zu aktualisieren und zu pflegen.
 
-[![Version](https://img.shields.io/badge/version-0.5.7-blue.svg)](https://github.com/tuxbox-neutrino/buildenv)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/tuxbox-neutrino/buildenv)
 
 - [1. Vorbereitung](#1-vorbereitung)
 	- [1.1 Erforderliche Host-Pakete installieren](#11-erforderliche-host-pakete-installieren)
