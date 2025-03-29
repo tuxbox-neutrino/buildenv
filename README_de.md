@@ -120,7 +120,6 @@ Nach [Schritt 1.4](#14-init-skript-ausführen) sollte etwa diese Struktur angele
          └── <machine y>           <-- weiteres Build-Unterverzeichnis für Maschinentyp y
 ```
 
-
 ## 2. Image bauen
 
 Stelle sicher, dass Du dich wie im [Schema](#15-struktur-der-buildumgebung) gezeigt hier befindest:
@@ -194,7 +193,6 @@ Sollten keine Aktualisierungen notwendig sein, werden die Builds automatisch üb
 bitbake neutrino-image
 ```
 
-
 ### 3.2 Paket aktualisieren
 
 ```bash
@@ -254,7 +252,6 @@ Wenn Du deine Maschinen-Konfigurationen zurücksetzen möchtest, benenne bitte d
 ```
 
 ### 4.3 Recipes
-
 
 **Sofern man nicht direkt an der Entwicklung der Poky-Ebenen beiteiligt ist, ändere nichts an den offiziellen Poky-Ebenen (Meta-Layer)! Dies wird vom Yocto-Projekt ausdrücklich nicht empfohlen, da man Gefahr läuft, bei Aktualisierungen, seine gesamte Arbeit zu verlieren und Inkompatibilitäten oder Konflikte schafft, die nur schwer zu warten sein können. Die übliche Vorgehensweise, um vorhandene offizielle Rezepte zu vervollständigen, zu erweitern oder zu überschreiben, ist die [Verwendung von .bbappend](https://docs.yoctoproject.org/3.2.4/dev-manual/dev-manual-common-tasks.html#using-bbappend-files-in-your-layer)-Dateien.**
 
@@ -333,7 +330,6 @@ anschließend neu bauen:
 bitbake <target>
 ```
 
-
 ## 6. Vollständigen Imagebau erzwingen
 
 Das Init-Skript stellt dafür die Option `--reset` zur Verfügung.
@@ -341,6 +337,7 @@ Das Init-Skript stellt dafür die Option `--reset` zur Verfügung.
 ```bash
 ./init --reset
 # Follow instructions
+
 ```
 
 Manuell erreichst Du das ebenfalls, indem man das tmp-Verzeichnis im jeweiligem Build-Unterverzeichnis manuell umbenennt. Löschen kann man es nachträglich, wenn man Speicherplatz freigeben will oder sich sicher ist, dass man das Verzeichnis nicht mehr braucht:
