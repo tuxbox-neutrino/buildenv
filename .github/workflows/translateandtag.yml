@@ -34,7 +34,6 @@ jobs:
         pip install --upgrade googletrans==3.1.0a0
         curl -o translate-md.py https://raw.githubusercontent.com/dbt1/translate-md/refs/heads/master/translate-md.py
         chmod 755 translate-md.py
-        curl -o translate-md-config.json https://raw.githubusercontent.com/dbt1/translate-md/refs/heads/master/translate-md-config.json.sample
 
     - name: Prepare Git user data
       run: |
@@ -56,7 +55,7 @@ jobs:
 
     - name: Commit and push translated README
       run: |
-        git add README*.md
+        git add README_de.md -f README_en.md
         git commit -m "readme: Automatically translated README"
 
     - name: Install tagit dependencies
@@ -75,7 +74,7 @@ jobs:
 
     - name: Tagging
       run: |
-        python tagit.py -f README_de.md -f README_en.md -f README_es.md -f README_fr.md -f README_it.md --scheme-file tagit-config.json
+        python tagit.py -f README_de.md -f README_en.md --scheme-file tagit-config.json
 
     - name: Commit and push version and tag changes
       run: |

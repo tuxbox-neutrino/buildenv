@@ -1,0 +1,10 @@
+{
+    "template_md": "template.md",
+    "output_dir": ".",
+    "prefix": "README_",
+    "main_doc": "README.md",
+    "target_languages": {
+        "de": ["German", "🇩🇪"],
+        "en": ["English", "🇬🇧"]
+    }
+}

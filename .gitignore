@@ -19,7 +19,7 @@ local build increment
 poky-*
 
 venv
-tagit*
-translate*
-template*
+tagit.py
+tagit-config.json
+translate-md.py
 
