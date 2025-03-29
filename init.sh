@@ -158,7 +158,7 @@ BUILD_ROOT_DIR="$BASEPATH/$POKY-$IMAGE_VERSION"
 BUILD_ROOT="$BUILD_ROOT_DIR/build"
 
 OE_LAYER_NAME=meta-openembedded
-OE_LAYER_GIT_URL=https://git.openembedded.org/meta-openembedded
+OE_LAYER_GIT_URL=https://github.com/openembedded/meta-openembedded.git
 OE_LAYER_PATCH_LIST=""
 
 OE_CORE_LAYER_NAME=openembedded-core
