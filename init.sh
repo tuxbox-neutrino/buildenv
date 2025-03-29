@@ -181,7 +181,7 @@ case "$IMAGE_VERSION" in
 esac
 
 # Check machine type
-if [ $(is_valid_machine "$MACHINE") == false ]; then
+if [ "$(is_valid_machine "$MACHINE")" = "false" ]; then
     my_echo "\033[31;1mNo valid machine defined.\033[0m"
     my_echo "$HINT_MACHINES"
     exit 1
