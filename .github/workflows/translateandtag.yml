@@ -1,16 +1,19 @@
-name: Translate README
+# name: Translate README
+
+# on:
+#   push:
+#     branches:
+#       - master
+#     paths:
+#       - 'README.md'
+#       - 'README_de.md'
+#       - 'init.sh'
+#       - 'init.functions.sh'
+#       - 'files/**'
+#       - 'local.conf.common.inc.sample'
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'README.md'
-      - 'README_de.md'
-      - 'init.sh'
-      - 'init.functions.sh'
-      - 'files/**'
-      - 'local.conf.common.inc.sample'
+  workflow_dispatch:
 
 permissions:
   contents: write
