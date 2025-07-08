@@ -2,236 +2,373 @@
 [🇩🇪 German](README_de.md) | <span style="color: grey;">🇬🇧 English</span>
 <!-- LANGUAGE_LINKS_END -->
 
-@Html_0@
-@Html_1@🇩🇪 german@html_2@| [🇬🇧 English](readme_en.md)
-@Html_3@
+This script serves as a tool to simplify setting up a development environment and the build process for images that run with Neutrino as the user interface on various hardware platforms. It automates several steps required to establish a consistent and functional development and build environment by preconfiguring necessary dependencies, basic configurations, and meta-layers, while allowing for custom settings. The script aims to provide a foundation on which you can build and experiment to create, update, and maintain your own customized versions of Tuxbox-Neutrino images.
 
-This script serves as a tool to simplify the creation of an environment for development and the build process for images that run with neutrino as a user interface on different hardware platforms. It automates a few steps that are required for the establishment of a consistent and functional development and build environment by adjusting the necessary dependencies and basic configurations as well as meta-layers and enables user-defined settings. The script aims to offer a basis on which you can build and experiment to create, update and maintain your own adapted versions of Tuxbox-Neutrino Images.
+* [1. Preparation](#1-preparation)
 
-[@Image_0@](@url_placeholder_0@)
+  * [1.1 Install Required Host Packages](#11-install-required-host-packages)
 
-- [1. Preparation](@anchor_0@)
-	- [1.1 Install the required host packages](@anchor_1@)
-		- [1.1.1 Recommended additional packages for graphic support and analysis](@anchor_2@)
-	- Prepare [1.2 git (if necessary)](@anchor_3@)
-	- [1.3 Init script clone](@anchor_4@)
-	- [1.4 Run init script](@anchor_5@)
-	- [1.5 Structure of the build environment](@anchor_6@)
-- [2. Build image](@anchor_7@)
-	- Select [2.1 box](@anchor_8@)
-	- [2.2 Start ambient script](@anchor_9@)
-	- [2.3 Create image](@anchor_10@)
-- [3. Update](@anchor_11@)
-	- [3.1 Update image](@anchor_12@)
-	- [3.2 update package](@anchor_13@)
-	-[3.3 Meta-layer repository](@anchor_14@)
-- [4. Own adjustments](@anchor_15@)
-	- [4.1 configuration](@anchor_16@)
-		- [4.1.1 Configuration files](@anchor_17@)
-		- [4.1.2 bblayers.conf](@anchor_18@)
-		- [4.1.3 Reset configuration](@anchor_19@)
-	- [4.3 Recipes](@anchor_20@)
-	- [4.4 packages](@anchor_21@)
-		- [4.4.1 Edit source code in WorkSpace (example)](@anchor_22@)
-- [5. Forced a new building of a single package](@anchor_23@)
-- [6. Forced complete image construction](@anchor_24@)
-- [7. License](@anchor_25@)
-- [8. Further information](@anchor_26@)
+    * [1.1.1 Recommended Additional Packages for Graphical Support and Analysis](#111-recommended-additional-packages-for-graphical-support-and-analysis)
+  * [1.2 Prepare Git (if necessary)](#12-prepare-git-if-necessary)
+  * [1.3 Clone Init Script](#13-clone-init-script)
+  * [1.4 Run Init Script](#14-run-init-script)
+  * [1.5 Build Environment Structure](#15-build-environment-structure)
+* [2. Building an Image](#2-building-an-image)
+
+  * [2.1 Choose a Box](#21-choose-a-box)
+  * [2.2 Start the Environment Script](#22-start-the-environment-script)
+  * [2.3 Create the Image](#23-create-the-image)
+* [3. Updates](#3-updates)
+
+  * [3.1 Update Image](#31-update-image)
+  * [3.2 Update Package](#32-update-package)
+  * [3.3 Update Meta-Layer Repositories](#33-update-meta-layer-repositories)
+* [4. Customizations](#4-customizations)
+
+  * [4.1 Configuration](#41-configuration)
+
+    * [4.1.1 Configuration Files](#411-configuration-files)
+    * [4.1.2 bblayers.conf](#412-bblayersconf)
+    * [4.1.3 Resetting Configuration](#413-resetting-configuration)
+  * [4.3 Recipes](#43-recipes)
+  * [4.4 Packages](#44-packages)
+
+    * [4.4.1 Editing Source Code in the Workspace (Example)](#441-editing-source-code-in-the-workspace-example)
+* [5. Forcing a Rebuild of a Single Package](#5-forcing-a-rebuild-of-a-single-package)
+* [6. Forcing a Full Image Rebuild](#6-forcing-a-full-image-rebuild)
+* [7. License](#7-license)
+* [8. Further Information](#8-further-information)
+
 ## 1. Preparation
 
-At this point, it is recommended to use the Docker container provided for this, as this has already been done with significant steps in order to be able to get started with as few adjustments to your system. [See Docker-Buildenv](@url_placeholder_1@). In this case you can start [with the initialization](@anchor_27@).
+At this point, it is recommended to use the provided Docker container, as it already covers essential steps needed to get started with minimal changes to your system. [See docker-buildenv](https://github.com/tuxbox-neutrino/docker-buildenv). In this case, you can jump straight to [running the initialization](#14-run-init-script).
 
-** Note: ** [Docker-Buildenv](@url_placeholder_2@) replaces the [Tuxbox-Builder](@url_placeholder_3@)-VM. Their maintenance is no longer continued.
+**NOTE:** [docker-buildenv](https://github.com/tuxbox-neutrino/docker-buildenv) fully replaces the [Tuxbox-Builder](https://sourceforge.net/projects/n4k/files/Tuxbox-Builder) VM, which is no longer maintained.
 
-Paths specified here are based on specifications that are generated by the Init script. Some entries are shown as @ Code_Block_0 @, which must be adapted locally. [See scheme](@anchor_28@)
-### 1.1 Install the necessary host packages
+The paths shown here are based on those generated by the init script. Some entries appear as `<placeholder>` and need to be adjusted locally. [See schema](#14-run-init-script).
 
-** Note: ** When using other distributions see: [Yocto Project Quick Build](@url_placeholder_4@)
+### 1.1 Install Required Host Packages
 
-Debian 11
+**Note:** If you are using other distributions, see: [Yocto Project Quick Build](https://docs.yoctoproject.org/3.2.4/ref-manual/ref-system-requirements.html#supported-linux-distributions)
 
-@Code_Block_1@
+**Debian 11**
 
-Debian 12
+```bash
+sudo apt-get install -y gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential \
+  chrpath socat cpio python python3 python3-pip python3-pexpect xz-utils debianutils \
+  iputils-ping python3-git python3-jinja2 libegl1-mesa pylint3 xterm subversion locales-all \
+  libxml2-utils ninja-build default-jre clisp libcapstone4 libsdl2-dev doxygen
+```
 
-@Code_Block_2@
-#### 1.1.1 Recommended additional packages for graphic support and analysis
+**Debian 12**
 
-@Code_Block_3@
-### Prepare 1.2 git (if necessary)
+```bash
+sudo apt-get install -y gawk wget git diffstat unzip texinfo gcc-multilib build-essential \
+  chrpath socat cpio python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping \
+  python3-git python3-jinja2 libegl1-mesa pylint3 xterm subversion locales-all libxml2-utils \
+  ninja-build default-jre clisp libcapstone4 libsdl2-dev doxygen
+```
 
-The Init script uses Git to clone the meta-layer repositors. If there is still no configured GIT, please set your global Git user data, otherwise while the script goes through, unnecessarily indicated this.
+#### 1.1.1 Recommended Additional Packages for Graphical Support and Analysis
 
-@Code_Block_4@
-### 1.3 Init script clone
+```bash
+sudo apt-get install -y gitk git-gui meld cppcheck clazy kdevelop
+```
 
-@Code_Block_5@
-### 1.4 Execute the init script
+### 1.2 Prepare Git (if necessary)
 
-@Code_Block_6@
-### 1.5 Structure of the build environment
+The init script uses Git to clone the meta-layer repositories. If you don’t have Git configured yet, please set up your global Git user data; otherwise, you’ll get unnecessary warnings while the script runs.
 
-According to [step 1.4](@anchor_29@) this structure should have been created:
+```bash
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+```
 
-@Code_Block_7@
-## 2. Building image
+### 1.3 Clone Init Script
 
-Make sure you are shown here as in the [scheme](@anchor_30@):
+```bash
+git clone https://github.com/tuxbox-neutrino/buildenv.git && cd buildenv
+```
 
-@Code_Block_8@
-### 2.1 Select box
+### 1.4 Run Init Script
 
-Have list available devices displayed:
+```bash
+./init && cd poky-3.2.4
+```
 
-@Code_Block_9@
-### 2.2 Start ambient script
+### 1.5 Build Environment Structure
 
-Perform the surrounding script for the box desired from the list once! You will then automatically get into the right build subdirectory.
+After [step 1.4](#14-run-init-script), you should see a structure similar to this:
 
-@Code_Block_10@
+```
+.buildenv
+ ├── dist                          <-- Shared folder for HTTP server (if set up) http://localhost, http://localhost:8080, needed for IPK feeds and images
+ │   └── {DISTRO_VERSION}          <-- Contains generated images and packages (symlinks to the deploy dirs inside build subdirectories)
+ :
+ ├── init.sh                       <-- init script
+ ├── local.conf.common.inc         <-- global user configuration, included in custom config
+ :
+ ├── log                           <-- folder for logs, contains logs for each init script run
+ :
+ └── poky-{DISTRO_VERSION}         <-- After step 1.4 you’ll be here. Contains the build system core and meta-layers
+     │
+     :
+     └── build                     <-- Build subdirectories; after step 2.2 you’ll be inside one of these
+         ├── <machine x>           <-- Build dir for machine type x
+         │   ├── conf              <-- Folder for layers and custom config
+         │   │   └── bblayers.conf <-- Config for included meta-layers
+         │   │   └── local.conf    <-- Custom config for one machine type
+         │   :
+         │   ├── (tmp)             <-- Work dir, auto-created during build
+         │   └── (workspace)       <-- Workspace, created when running devtool
+         :
+         └── <machine y>           <-- Another build dir for machine type y
+```
 
-As long as you are now in the desired build subdirectory with the environment generated within the opened shell, you don't have to do this script again and you can build [Step 2.3](@anchor_31@) Images or any packages.
+## 2. Building an Image
 
-** Note: ** You can also create other shells and thus build environments for further box types in parallel and switch to the corresponding terminal as required and have it built in parallel if your system gives.
-### 2.3 Create image
+Make sure you are in the directory shown in the [schema](#15-build-environment-structure):
 
-@Code_Block_11@
+```
+poky-{DISTRO_VERSION}
+```
 
-It can take a while. Some warning messages can be ignored. Error messages that affect the setsCene tasks are not a problem, but errors during the build and package tasks break the process in most cases.  [In this case please report the error or share your solution](@url_placeholder_5@). Help is very welcome.
+### 2.1 Choose a Box
 
-If everything is done, a message similar to this should appear:
+List available devices:
 
-@Code_Block_12@
+```bash
+ls build
+```
 
-@Html_4@that's ...@html_5@
+### 2.2 Start the Environment Script
 
-You can find results at:
+Run the environment script for the desired box from the list once! You will be placed into the corresponding build subdirectory.
 
-@Code_Block_13@
+```bash
+. ./oe-init-build-env build/<machine>
+```
 
-Or in the release directory:
+From now on, as long as you remain in the generated environment within the open shell in the chosen build subdirectory, you don’t need to re-run this script and can go straight to [step 2.3](#23-create-the-image) to build images or any packages.
 
-@Code_Block_14@
+**Note:** You can also open additional shells and thus create parallel build environments for other box types, switching to the appropriate terminal as needed and even building in parallel, provided your system can handle it.
 
-If a web server is set up that points to the release directory:
+### 2.3 Create the Image
 
-@Code_Block_15@
-## 3. Update
+```bash
+bitbake neutrino-image
+```
 
-Manual updates of the packages are not required. This is carried out automatically with Bitbake for every target. This also applies to possible dependencies. If you want to have full control over certain package sources, you can take them off for each package in the workspace provided for this, see [4.4 packages](@anchor_32@).
-If no updates are necessary, the builds will automatically skip.
-### 3.1 Update image
+This can take a while. Some warnings can be ignored. Errors related to setscene tasks are usually harmless, but build and package task errors typically abort the process. [Please report the error or share your solution](https://forum.tuxbox-neutrino.org/forum/viewforum.php?f=77). Help is always welcome.
 
-@Code_Block_16@
-### 3.2 update package
+When done, you should see a message like this:
 
-@Code_Block_17@
-### 3.3 Update meta-layer repository
+```bash
+NOTE: Tasks Summary: Attempted 4568 tasks of which 4198 didn't need to be rerun and all succeeded.
+```
 
-The execution of the init script with the @ Code_Block_18 @ parameter updates the contained meta-layer to the status of the remote repository.
+<span style="color: green;">That’s it...</span>
 
-@Code_Block_19@
+Results can be found under:
 
-If you have made changes to the meta-layers, the update routines of the init script that did not steady or rebassage are not fixed to the local repository of the init script. Of course, you can manually update your local meta-layer for meta-neutrino and machine-layer repository. However, conflicts must always be dissolved manually.
+```bash
+buildenv/poky-{DISTRO_VERSION}/build/<machine>/tmp/deploy
+```
 
-** Note: ** Configuration files are essentially unaffected, but possible variables are migrated. New or changed settings are not changed. Please check the configuration.
-## 4. Own adjustments
+or in the shared directory:
+
+```bash
+buildenv/dist/<Image-Version>/<machine>/
+```
+
+If you have a web server pointing to the shared directory:
+
+```bash
+http://localhost/{DISTRO_VERSION} or with port number http://localhost:8080/{DISTRO_VERSION}
+```
+
+## 3. Updates
+
+Manual package updates are not required. These are handled automatically on every bitbake invocation, including dependencies. If you want full control over certain package sources, you can place them in the workspace for each package; see [4.4 Packages](#44-packages).
+
+If no updates are needed, builds are skipped automatically.
+
+### 3.1 Update Image
+
+```bash
+bitbake neutrino-image
+```
+
+### 3.2 Update Package
+
+```bash
+bitbake <package>
+```
+
+### 3.3 Update Meta-Layer Repositories
+
+Running the init script with the `--update` parameter updates the included meta-layers to the state of their remote repositories.
+
+```bash
+./init --update
+```
+
+If you have made changes to the meta-layers, the init script’s update routines should temporarily stash or rebase unstashed changes on the local repositories. Of course, you can manually update your local meta-layers for meta-neutrino and machine-layer repos, but you must resolve any conflicts manually.
+
+**Note:** Configuration files remain mostly untouched, but variable names may be migrated. New or changed settings are not auto-updated. Please review your configuration if necessary.
+
+## 4. Customizations
 
 ### 4.1 Configuration
 
-It is recommended to build for the first time without changed configuration files to get an impression of how the build process works and to see the results as quickly as possible.
-The setting options are very extensive and not really manageable for beginners. Openembedded in particular the Yocto-Project is very
-Comprehensively documented and offers the best source of information.
-#### 4.1.1 Configuration files
+It is recommended to build for the first time without modified configuration files to get a feel for the build process and see results quickly. The configuration options are extensive and not easy for beginners to grasp. However, OpenEmbedded and the Yocto Project are thoroughly documented and provide the best information source.
 
-> ~/BUILDENV/POKY-3.2.4/Build/@Code_Block_20@/Conf/Local.conf
+#### 4.1.1 Configuration Files
 
-This file is located in the building directory of the respective machine type and is the actual custom configuration file, which is originally intended for this. However, this local.conf contains only a few lines in this environment and includes a global configuration. This file is only valid ** for the machine type it supported. Here you can therefore add supplementary entries in front, which are only intended for the machine type. [See also scheme](@anchor_33@)
+> \~/buildenv/poky-3.2.4/build/`<machine>`/conf/local.conf
 
-> ~/buildenv/local.conf.common.inc
+This file, located in the build directory for each machine type, is the actual user configuration file intended by the build system. In this environment, it contains only a few lines and includes a global configuration. This file is **only** valid for its specific machine type. You can add entries here that apply only to that machine type. [See schema](#14-run-init-script)
 
-This file contains settings that apply to all machine types and is generated when the Init scripts from the template @ Code_Block_21 @
+> \~/buildenv/local.conf.common.inc
 
-The @ Code_Block_22 @ provided by the build system could be used as the primary configuration file for each machine type, as it is provided to by the build system, but that would unnecessarily increase the maintenance effort. That's why @ Code_Block_23 @ is only in @ Code_Block_24 @ included,
+This file holds settings that apply to all machine types and is generated from the template `~/buildenv/local.conf.common.inc.sample` on the first run of the init script.
 
-** Note on ** @Code_Block_25 @**: ** This is just a template and should remain unaffected to avoid possible conflicts when updating the build script repositors and to see what could have changed.
+Although you could use the build system’s intended `./build/<machine>/conf/local.conf` as the primary config file for each machine separately, this would increase maintenance overhead. Hence, `~/buildenv/local.conf.common.inc` is only included in `./build/<machine>/conf/local.conf`.
 
-After an updating of the Build Script repository, new or changed options could have been added or removed that are not transferred to the included configuration file. This case should be taken into account in your own configuration and check and adapt if necessary.
-#### 4.1.2 Bblayers.conf
+**Note on** `~/buildenv/local.conf.common.inc.sample`**:** This is a template and should remain untouched to avoid conflicts when updating the build-script repository and to see what has changed.
 
-> ~/Builddenv/Poky-3.2.4/Build/@Code_Block_26@/conflayers.conf
+After updating the build-script repository, new or changed options may have been added or removed and not merged into your included config file. You should consider these cases and review and adjust your configuration if necessary.
 
-This file is usually adjusted when the Init script is carried out for the first time and usually only needs to be adjusted if you want to add, remove or replace layers.
-#### 4.1.3 Reset configuration
+#### 4.1.2 bblayers.conf
 
-If you want to reset your machine configurations, please name the CONF directory (delete is not recommended) and carry out the Init script again.
+> \~/buildenv/poky-3.2.4/build/`<machine>`/conf/bblayers.conf
 
-@Code_Block_27@
+This file is usually adjusted on the first run of the init script and typically only needs changes when you want to add, remove, or replace layers.
+
+#### 4.1.3 Resetting Configuration
+
+If you want to reset your machine configurations, rename (rather than delete) the conf directory and rerun the init script.
+
+```bash
+mv ~/buildenv/poky-3.2.4/build/<machine>/conf ~/buildenv/poky-3.2.4/build/<machine>/conf.backup
+cd ~/buildenv
+./init
+```
+
 ### 4.3 Recipes
 
-** Unless you are directly involved in the development of the Poky levels, do not change the official Poky levels (meta-layer)! This is expressly not recommended by the Yocto project, since you run the risk of losing your entire work with updates and creating incompatibilities or conflicts that are difficult to wait. The usual procedure to complete, expand or overwrite existing official recipes is the [Use of .bbappend](@url_placeholder_6@)-files. **
+**Unless you are directly contributing to Poky layers, do not modify the official Poky layers (meta-layers)!** The Yocto Project strongly discourages this practice, as you risk losing your work during updates and creating hard-to-maintain conflicts.
 
-Alternatively, but not really recommended, you could take copies of official reciepes into your own meta-layer and adapt, since these are usually preferred by the build system. In such a case, however, one is responsible for keeping these recipes up -to -date, but this can unnecessarily increase the maintenance effort.
+The usual way to extend or override existing recipes is with `.bbappend` files. [Learn more](https://docs.yoctoproject.org/3.2.4/dev-manual/dev-manual-common-tasks.html#using-bbappend-files-in-your-layer).
 
-In principle, the same applies to recipes from your own meta-layers such as Meta-Neutrino or machine layers. But if you want to work actively on the recipes](@url_placeholder_7@), you are welcome to do so.
-### 4.4 packages
+Alternatively (though also not recommended), you could copy official recipes into your own meta-layers and modify them, in which case you are responsible for keeping them up to date, increasing maintenance overhead.
 
-If you want to have full control over a package source code, e.g. to develop something or actively develop, the source code you want to work should be moved to the workspace. See: [Example for Neutrino](@anchor_34@)
+The same principle applies to your own meta-layers like meta-neutrino or machine layers. If you want to actively work on recipes, feel free to [contribute](https://docs.yoctoproject.org/current/ref-manual/devtool-reference.html#modifying-an-existing-recipe).
 
-See [Devtool](@url_placeholder_8@) and in particular [Devtool modify](@url_placeholder_9@). In the workspace you have the guarantee that the source code will not be touched by the build system. If you do not pay attention to this, it can happen, for example, that changed source code is repeatedly deleted or modified. Own adjustments can therefore be lost or become incompatible. In the local standard configuration [RM_Work](@url_placeholder_10@) is activated, which ensures that after each completed construction of a package, the respective working directory is tidied up, so that nothing will be left except for some logs.
-#### 4.4.1 Edit source code in WorkSpace (example)
+### 4.4 Packages
 
-Neutrino is used here, but this procedure essentially applies to all other packages.
+If you want full control over a package’s source code (e.g., to fix or actively develop something), move the source you want to work on into the workspace. See the Neutrino example below.
 
-@Code_Block_28@
+See [devtool](https://docs.yoctoproject.org/current/ref-manual/devtool-reference.html) and especially [devtool modify](https://docs.yoctoproject.org/current/ref-manual/devtool-reference.html#modifying-an-existing-recipe). In the workspace, you’re guaranteed that the build system won’t touch the source. If you ignore this, you might find your changes repeatedly cleaned or overridden, losing or rendering them incompatible. In the default local config, [rm\_work](https://docs.yoctoproject.org/ref-manual/classes.html#ref-classes-rm-work) is enabled, which cleans each package’s work directory after build, leaving only logs.
 
-The source code for Neutrino is now located at @ Code_Block_29 @. You can then work on it. This means that the build system no longer clits the neutrino sources on its own from the remote git repo, but from now on only uses the local sources within the workspace that you have to manage yourself. This is a GIT repo created by Devtool, in which you can integrate to the original remote repository, unless this is the case.
+#### 4.4.1 Editing Source Code in the Workspace (Example)
 
-If you now go out ...
+This example uses Neutrino, but the procedure applies to most packages.
 
-@Code_Block_30@
+```bash
+~/buildenv/poky-3.2.4/build/hd61$ devtool modify neutrino
+NOTE: Starting bitbake server...54cf81d24c147d888c"
+...
+workspace            = "3.2.4:13143ea85a1ab7703825c0673128c05845b96cb5"
 
-... from now on will only be built by the local repo in the workspace:
+Initialising tasks: 100% |########################################################################################################| Time: 0:00:01
+Sstate summary: Wanted 0 Found 0 Missed 0 Current 10 (0% match, 100% complete)
+NOTE: Executing Tasks
+NOTE: Tasks Summary: Attempted 83 tasks of which 80 didn't need to be rerun and all succeeded.
+INFO: Adding local source files to srctree...
+INFO: Source tree extracted to /home/<user>/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino
+INFO: Recipe neutrino-mp now set up to build from /home/<user>/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino
+```
 
-@Code_Block_31@
+The Neutrino source code is now in `/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino`. You can work on it there. From now on, the build system will not clone Neutrino from the remote Git repo but will use only your local workspace sources, managed by you.
 
-** Note! ** In the special case of Neutrino, it is advisable not only to transfer its source code, but also the associated @ Code_Block_32 @ to the WorkSpace.
+When you run:
 
-@Code_Block_33@
-## 5. Forced a new construction of a single package
+```bash
+bitbake neutrino
+```
 
-In some cases it can happen that a target, for whatever reason. So you should never panic and therefore delete the work folder and the expensive Sstate cache. Realization can be made individually for each target without flattening an otherwise functioning system.
+... Neutrino will build from the local workspace repo:
 
-Defective archive URLs in particular can lead to demolition. However, these errors are always displayed and the URL can be checked. Often it is only due to the servers and even work again after a few minutes.
+```bash
+NOTE: Started PRServer with DBfile: /home/<user>/buildenv/poky-3.2.4/build/hd61/cache/prserv.sqlite3, IP: 127.0.0.1, PORT: 34211, PID: 56838
+...
+workspace            = "3.2.4:13143ea85a1ab7703825c0673128c05845b96cb5"
 
-In order to ensure whether the relevant recipe actually has a problem, it makes sense to completely clean up and rebuild the Target in question. To achieve this, all associated package, build and cached data must be adjusted.
+Initialising tasks: 100% |########################################################################################################| Time: 0:00:01
+Sstate summary: Wanted 122 Found 116 Missed 6 Current 818 (95% match, 99% complete)
+NOTE: Executing Tasks
+NOTE: neutrino-mp: compiling from external source tree /home/<user>/buildenv/poky-3.2.4/build/hd61/workspace/sources/neutrino
+NOTE: Tasks Summary: Attempted 2756 tasks of which 2741 didn't need to be rerun and all succeeded.
+```
 
-@Code_Block_34@
-Then build again:
+**Tip:** For Neutrino, it’s also recommended to transfer the associated `libstb-hal` to the workspace:
 
-@Code_Block_35@
-## 6. Forced complete image construction
+```bash
+devtool modify libstb-hal
+```
 
-The Init script provides the option @ inline_code_0 @.
+## 5. Forcing a Rebuild of a Single Package
 
-@Code_Block_36@
+Sometimes a target fails for unknown reasons. Avoid panicking and wiping your workspace or sstate cache. You can clean up a specific target without breaking everything else.
 
-You can also manually achieve this by manually renamed the TMP directory in the respective build subdirectory. You can extinguish it afterwards if you want to release storage space or are sure that you no longer need the directory:
+Broken archive URLs often cause failures. These errors are shown, and you can verify the URL. They often resolve after a few minutes.
 
-@Code_Block_37@
+To ensure a recipe actually has an issue, clean and rebuild the entire target’s data:
 
-Then have the image rebuilt:
+```bash
+bitbake -c cleansstate <target>
+```
 
-@Code_Block_38@
+Then rebuild:
 
-If you have not deleted the cache ** **, the image should be finished in a relatively short time. This is precisely why it is recommended to maintain the cache. The directory where the cache is located is determined via the variable @ Code_Block_39 @ and can be adjusted in the configuration.
+```bash
+bitbake <target>
+```
 
-This directory is quite valuable and only in rare cases it is necessary to delete this directory. Please note that the build process takes a lot more time after deleting the cache.
+## 6. Forcing a Full Image Rebuild
+
+The init script provides the `--reset` option:
+
+```bash
+./init --reset
+# Follow instructions
+```
+
+Manually, rename the tmp directory in the respective build subdirectory. You can delete it later to free space if you’re sure you don’t need it:
+
+```bash
+mv tmp tmp.backup
+```
+
+Then rebuild the image:
+
+```bash
+bitbake neutrino-image
+```
+
+If you haven’t deleted the cache, the image should finish relatively quickly. That’s why retaining the cache is recommended. The cache directory is defined by `${SSTATE_DIR}` and can be customized in the configuration.
+
+This directory is valuable, and deleting it is rarely needed. Note that builds take much longer after deleting the cache.
+
 ## 7. License
 
-@Code_Block_40@
-## 8. Further information
+```
+MIT License
+```
 
-Further information on the Yocto Build system:
+## 8. Further Information
 
-* https://docs.yoctroject.org
+More information on the Yocto build system:
+
+* [https://docs.yoctoproject.org](https://docs.yoctoproject.org)
