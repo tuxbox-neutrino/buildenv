@@ -10,7 +10,7 @@ Dieses Skript dient als Werkzeug zur Vereinfachung der Erstellung einer Umgebung
 	- [1.2 Git vorbereiten (falls erforderlich)](#12-git-vorbereiten-falls-erforderlich)
 	- [1.3 Init-Skript klonen](#13-init-skript-klonen)
 	- [1.4 Init-Skript ausführen](#14-init-skript-ausführen)
-	- [1.5 Struktur der Buildumgebung](#15-struktur-der-buildumgebung)
+	- [1.4.1 Struktur der Buildumgebung](#141-struktur-der-buildumgebung)
 - [2. Image bauen](#2-image-bauen)
 	- [2.1 Box wählen](#21-box-wählen)
 	- [2.2 Starte Umgebungsskript](#22-starte-umgebungsskript)
@@ -89,7 +89,7 @@ git clone https://github.com/tuxbox-neutrino/buildenv.git && cd buildenv
 ./init && cd poky-3.2.4
 ```
 
-### 1.5 Struktur der Buildumgebung
+### 1.4.1 Struktur der Buildumgebung
 
 Nach [Schritt 1.4](#14-init-skript-ausführen) sollte etwa diese Struktur angelegt worden sein:
 
@@ -106,21 +106,21 @@ Nach [Schritt 1.4](#14-init-skript-ausführen) sollte etwa diese Struktur angele
  └── poky-{DISTRO_VERSION}         <-- Nach Schritt 1.4 befindest Du dich hier. Hier befindet sich der Buildsystem-Kern und die Meta-Layer
      │
      :
-     └── build                     <-- Hier liegen die Build-Unterverzeichnisse, nach Schritt 2.2 befindest Du dich in einem dieser Build-Unterverzeichnisse
+     └── build                     <-- Hier liegen die Build-Unterverzeichnisse, nach Schritt 2.2 befindest Du dich in einem der Maschinen- Build-Unterverzeichnisse
          ├── <machine x>           <-- Build-Unterverzeichnis für Maschinentyp x
          │   ├── conf              <-- Ordner für Layer und benutzerdefinierte Konfiguration
          │   │   └── bblayers.conf <-- Konfigurationsdatei für eingebundene Meta-Layer
          │   │   └── local.conf    <-- benutzerdefinierte Konfiguration für einen Maschinentyp
 		 │   :
-         │   ├── (tmp)             <-- Arbeitsverzeichnis, wird beim Bauen automatisch angelegt
-         │   └── (workspace)       <-- Workspace, wird beim Ausführen von devtool angelegt
+         │   ├── (tmp)             <-- Arbeitsverzeichnis, wird beim Bauen von Targets von Bitbake automatisch angelegt
+         │   └── (workspace)       <-- Workspace, wird automatisch beim Ausführen von ```devtool modify``` angelegt
          :
          └── <machine y>           <-- weiteres Build-Unterverzeichnis für Maschinentyp y
 ```
 
 ## 2. Image bauen
 
-Stelle sicher, dass Du dich wie im [Schema](#15-struktur-der-buildumgebung) gezeigt hier befindest:
+Stelle sicher, dass Du dich wie im [Schema](#141-struktur-der-buildumgebung) gezeigt im ```poky```-Verzeichnis befindest:
 
 ```
 poky-{DISTRO_VERSION}
@@ -131,18 +131,21 @@ poky-{DISTRO_VERSION}
 Liste verfügbarer Geräte anzeigen lassen:
 
 ```bash
-ls  build
+ls build
+<machine>  <machine1>  <machine2>  <machine3>...
 ```
+**Hinweis:** Die hier ausgegebenen Typen können gebaut werden und müssen bei den folgenden Schritten genauso angegeben werden, also möglichts nicht vertippen!
+
 
 ### 2.2 Starte Umgebungsskript
 
-Führe das Umgebungsskript für die aus der Liste gewünschte Box einmalig aus! Du gelangst dann automatisch in das passende Build-Unterverzeichnis.
+Führe das Umgebungsskript für genau **eine** aus der Liste gewünschte Box einmalig aus! Du gelangst dann automatisch in das passende Build-Unterverzeichnis.
 
 ```bash
 . ./oe-init-build-env build/<machine>
 ```
 
-Solange man sich ab jetzt mit der erzeugten Umgebung innerhalb der geöffneten Shell im gewünschten Build-Unterverzeichnis befindet, muss man dieses Script nicht noch einmal ausführen und kannst [Schritt 2.3 ](#23-image-erstellen) Images oder beliebige Pakete bauen.
+Solange man sich ab jetzt mit der erzeugten Umgebung innerhalb der geöffneten Shell im gewünschten Build-Unterverzeichnis befindet, muss man dieses Script nicht noch einmal ausführen und kannst mit [Schritt 2.3 ](#23-image-erstellen) Images oder beliebige Pakete bauen.
 
 **Hinweis:** Du kannst auch weitere Shells und damit Buildumgebungen für weitere Boxtypen parallel dazu anlegen und je nach Bedarf auf das entsprechende Terminal wechseln und auch parallel bauen lassen, sofern es dein System hergibt.
 
@@ -152,7 +155,7 @@ Solange man sich ab jetzt mit der erzeugten Umgebung innerhalb der geöffneten S
 bitbake neutrino-image
 ```
 
-Das kann eine Weile dauern. Einige Warnmeldungen können ignoriert werden. Fehlermeldungen, welche die Setscene-Tasks betreffen, sind kein Problem, aber Fehler während der Build- und Package-Tasks brechen den Prozess in den meisten Fällen ab.  [Bitte melde in diesem Fall den Fehler oder teile Deine Lösung](https://forum.tuxbox-neutrino.org/forum/viewforum.php?f=77). Hilfe ist sehr willkommen.
+Dieser Befehl baut nun das komplette Image mit allen dazu gehörenden Paketen und auch den Paketen, die je nach Konfiguration extra gebaut werden oder nur gabaut aber nicht ins Image installiert werden sollen. Das kann eine Weile dauern. Einige Warnmeldungen können ignoriert werden. Fehlermeldungen, welche die Setscene-Tasks betreffen, sind kein Problem, aber Fehler während der Build- und Package-Tasks brechen den Prozess in den meisten Fällen ab.  [Bitte melde in diesem Fall den Fehler oder teile Deine Lösung](https://forum.tuxbox-neutrino.org/forum/viewforum.php?f=77). Hilfe ist sehr willkommen.
 
 Wenn alles erledigt ist, sollte eine ähnliche Meldung wie diese erscheinen:
 
