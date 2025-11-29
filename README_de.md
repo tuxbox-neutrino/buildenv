@@ -69,7 +69,7 @@ sudo apt-get install \
   build-essential \
   chrpath socat cpio python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping \
   python3-git python3-jinja2 libegl1 xterm subversion locales-all libxml2-utils \
-  ninja-build default-jre clisp libcapstone-dev libsdl2-dev doxygen
+  ninja-build default-jre clisp libcapstone-dev libsdl2-dev doxygen git-all
 ```
 
 #### 1.1.1 Empfohlene Zusatzpakete zur grafischen Unterstützung und Analyse
